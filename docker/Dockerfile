@@ -42,6 +42,7 @@ WORKDIR $HOME_DIR
 
 # Copy init_db_server.sh to the container
 COPY ./init_db_server.sh $HOME_DIR/init_db_server.sh
+RUN sudo chown -R $DB_USER $HOME_DIR/init_db_server.sh
 
 # Export DB_USER and DB_PASS and DB_NAME
 ENV DB_USER=$DB_USER
@@ -60,30 +61,29 @@ ENV PATH=$HOME_DIR/miniconda/bin:$PATH
 RUN conda --version
 ENV CONDA_PATH=$HOME_DIR/miniconda
 
-# Add conda initialization to .bashrc
-RUN echo "# >>> conda initialize >>>" >> $HOME_DIR/.bashrc && \
-    echo "# !! Contents within this block are managed by 'conda init' !!" >> $HOME_DIR/.bashrc && \
-    echo "__conda_setup=\"\$('$CONDA_PATH/bin/conda' 'shell.bash' 'hook' 2> /dev/null)\"" >> $HOME_DIR/.bashrc && \
-    echo "if [ \$? -eq 0 ]; then" >> $HOME_DIR/.bashrc && \
-    echo "    eval \"\$__conda_setup\"" >> $HOME_DIR/.bashrc && \
-    echo "else" >> $HOME_DIR/.bashrc && \
-    echo "    if [ -f \"$CONDA_PATH/etc/profile.d/conda.sh\" ]; then" >> $HOME_DIR/.bashrc && \
-    echo "        . \"$CONDA_PATH/etc/profile.d/conda.sh\"" >> $HOME_DIR/.bashrc && \
-    echo "    else" >> $HOME_DIR/.bashrc && \
-    echo "        export PATH=\"$CONDA_PATH/bin:\$PATH\"" >> $HOME_DIR/.bashrc && \
-    echo "    fi" >> $HOME_DIR/.bashrc && \
-    echo "fi" >> $HOME_DIR/.bashrc && \
-    echo "unset __conda_setup" >> $HOME_DIR/.bashrc && \
-    echo "# <<< conda initialize <<<" >> $HOME_DIR/.bashrc
-
+ENV CONDA_INIT_OUT_PATH=$HOME_DIR/init_db_server.sh
+RUN echo "# >>> conda initialize >>>" >> $CONDA_INIT_OUT_PATH && \
+    echo "# !! Contents within this block are managed by 'conda init' !!" >> $CONDA_INIT_OUT_PATH && \
+    echo "__conda_setup=\"\$('$CONDA_PATH/bin/conda' 'shell.bash' 'hook' 2> /dev/null)\"" >> $CONDA_INIT_OUT_PATH && \
+    echo "if [ \$? -eq 0 ]; then" >> $CONDA_INIT_OUT_PATH && \
+    echo "    eval \"\$__conda_setup\"" >> $CONDA_INIT_OUT_PATH && \
+    echo "else" >> $CONDA_INIT_OUT_PATH && \
+    echo "    if [ -f \"$CONDA_PATH/etc/profile.d/conda.sh\" ]; then" >> $CONDA_INIT_OUT_PATH && \
+    echo "        . \"$CONDA_PATH/etc/profile.d/conda.sh\"" >> $CONDA_INIT_OUT_PATH && \
+    echo "    else" >> $CONDA_INIT_OUT_PATH && \
+    echo "        export PATH=\"$CONDA_PATH/bin:\$PATH\"" >> $CONDA_INIT_OUT_PATH && \
+    echo "    fi" >> $CONDA_INIT_OUT_PATH && \
+    echo "fi" >> $CONDA_INIT_OUT_PATH && \
+    echo "unset __conda_setup" >> $CONDA_INIT_OUT_PATH && \
+    echo "# <<< conda initialize <<<" >> $CONDA_INIT_OUT_PATH
 # Upgrade pip
 RUN pip install --upgrade pip
 
 COPY ./requirements.txt $HOME_DIR/requirements.txt
+RUN sudo chown -R $DB_USER $HOME_DIR/requirements.txt
+
 RUN pip install -r ./requirements.txt
 
 COPY ./test_conn.py $HOME_DIR/test_conn.py
 # own copied files
 RUN sudo chown -R $DB_USER $HOME_DIR/test_conn.py
-RUN sudo chown -R $DB_USER $HOME_DIR/requirements.txt
-RUN sudo chown -R $DB_USER $HOME_DIR/init_db_server.sh
