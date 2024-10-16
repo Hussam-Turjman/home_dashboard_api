@@ -14,5 +14,5 @@ jobs:
         run: |
           pwd &&
           ls -la &&
-          ls /home/hussam/init_db_server.sh &&
+          source /home/hussam/init_db_server.sh &&
           pytest tests/ --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
