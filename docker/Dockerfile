@@ -80,4 +80,17 @@ RUN pip install --upgrade pip
 
 COPY ./requirements.txt $HOME_DIR/requirements.txt
 RUN pip install -r ./requirements.txt
-# Install the dependencies TODO
+
+# Get permissions to the root directory /
+USER root
+# Create github directory /github/home
+RUN mkdir -p /github/home
+# Give all permissions to everyone
+RUN chmod -R 666 /github/home
+
+# Create runner directory /home/runner
+RUN mkdir -p /home/runner
+# Give all permissions to everyone
+RUN chmod -R 666 /home/runner
+
+USER $DB_USER
