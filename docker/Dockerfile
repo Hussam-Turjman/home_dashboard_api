@@ -80,8 +80,3 @@ RUN pip install --upgrade pip
 
 COPY ./requirements.txt $HOME_DIR/requirements.txt
 RUN pip install -r ./requirements.txt
-
-USER root
-RUN mkdir -p /__w
-RUN chown -R $DB_USER:$DB_USER /__w
-USER $DB_USER
