@@ -4,7 +4,8 @@ import sqlalchemy
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import (Column, Integer, String, Date, DateTime,
                         ForeignKey, Boolean, Float)
-
+import logging
+logger = logging.getLogger(__name__)
 Base = declarative_base()
 
 # read environment variables
@@ -59,7 +60,7 @@ def run():
         db_session.add(user)
         db_session.commit()
 
-    print("Successfully connected to the database")
+    logger.info("Successfully connected to the database")
 
 
 def test_conn():
