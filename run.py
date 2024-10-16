@@ -5,9 +5,12 @@ from home_api.app import app
 from home_api.entrypoint import entry_point
 import uvicorn
 from home_api.logger import logger
+from home_api.db.session import Session
 
 
 def run():
+    with Session.create() as db_session:
+        print("Successfully connected to the database")
     uvicorn.run(app,
                 host=entry_point.host,
                 port=entry_point.port,

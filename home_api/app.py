@@ -43,7 +43,7 @@ app = FastAPI(title="Home Dashboard",
 
 origins = [
     "https://hussam-turjman.de",
-    "http://localhost:3000",
+    f"http://{entry_point.host}:{entry_point.port}",
 ]
 app.add_middleware(
     CORSMiddleware,
