@@ -5,7 +5,9 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: 889977/home_dashboard:latest
+    container:
+      image: 889977/home_dashboard:latest
+      options: --user hussam
     steps:
       - uses: actions/checkout@v4
       - name: Test
