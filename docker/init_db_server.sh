@@ -10,8 +10,14 @@ export POSTGRESQL_VERSION=$(psql --version | awk '{print $3}')
 export POSTGRESQL_VERSION_MAJOR=$(echo "$POSTGRESQL_VERSION" | awk -F. '{print $1}')
 echo "PostgreSQL version: $POSTGRESQL_VERSION"
 echo "PostgreSQL major version: $POSTGRESQL_VERSION_MAJOR"
-
-sudo pg_createcluster "$POSTGRESQL_VERSION_MAJOR" main
+# check if cluster configuration exists
+if [ ! -d "/etc/postgresql/$POSTGRESQL_VERSION_MAJOR/main" ]; then
+    echo "Creating cluster configuration"
+    sudo pg_createcluster "$POSTGRESQL_VERSION_MAJOR" main
+else
+    echo "Cluster configuration already exists"
+fi
+# sudo pg_createcluster "$POSTGRESQL_VERSION_MAJOR" main
 
 sudo systemctl enable postgresql
 sudo systemctl start postgresql
