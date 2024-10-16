@@ -63,5 +63,5 @@ def run():
 
 
 def test_conn():
-    # run()
+    run()
     assert True
