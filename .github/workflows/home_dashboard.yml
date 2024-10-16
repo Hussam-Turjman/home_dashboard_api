@@ -10,9 +10,6 @@ jobs:
       options: --user root
     steps:
       - uses: actions/checkout@v4
-        with:
-          clean: false
-          set-safe-directory: false
       - name: Test
         run: |
           pwd && ls -la
