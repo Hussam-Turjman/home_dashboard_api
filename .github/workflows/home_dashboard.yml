@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: 889977/home_dashboard:latest
-      options: --user hussam
+      options: --user root
     steps:
       - uses: actions/checkout@v4
         with:
