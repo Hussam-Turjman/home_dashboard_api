@@ -1,3 +1,5 @@
 fastapi
 pytest
 pytest-cov
+sqlalchemy
+psycopg2

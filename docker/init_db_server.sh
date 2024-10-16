@@ -38,3 +38,5 @@ psql -U postgres -c "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | gre
 psql -U postgres -c "SELECT 1 FROM pg_roles WHERE rolname = '$DB_USER'" | grep -q 1 || psql -U postgres -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';"
 # psql -U postgres -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';"
 psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+# grant all privileges on schema public to $DB_USER;
+psql -U postgres -c "ALTER USER $DB_USER WITH SUPERUSER;"

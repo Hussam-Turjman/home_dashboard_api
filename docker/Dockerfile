@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y  systemctl sudo
 RUN apt-get install -y vim
 RUN apt-get install -y git build-essential
 RUN apt-get install -y wget htop sqlite3
+RUN apt-get install -y libpq-dev
 
 
 RUN usermod -aG sudo $DB_USER && \
@@ -80,3 +81,9 @@ RUN pip install --upgrade pip
 
 COPY ./requirements.txt $HOME_DIR/requirements.txt
 RUN pip install -r ./requirements.txt
+
+COPY ./test_conn.py $HOME_DIR/test_conn.py
+# own copied files
+RUN sudo chown -R $DB_USER $HOME_DIR/test_conn.py
+RUN sudo chown -R $DB_USER $HOME_DIR/requirements.txt
+RUN sudo chown -R $DB_USER $HOME_DIR/init_db_server.sh
