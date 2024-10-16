@@ -5,7 +5,7 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: postgres:latest
+    container: 889977/home_dashboard:latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
