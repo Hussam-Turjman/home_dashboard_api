@@ -15,7 +15,7 @@ jobs:
         run: |
           pwd &&
           ls -la &&
-          . /home/hussam/.bashrc &&
+          . /home/hussam/init_db_server.sh &&
           pytest tests/ -o log_cli=true  --doctest-modules --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
       - name: Archive code coverage results
         uses: actions/upload-artifact@v4
