@@ -1,0 +1,3 @@
+fastapi
+pytest
+pytest-cov
