@@ -1,6 +1,6 @@
 name: Home Dashboard API
 
-on: [push]
+on: [ push ]
 
 jobs:
   build:
@@ -9,10 +9,20 @@ jobs:
       image: 889977/home_dashboard:latest
       options: --user root
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
       - name: Test
         run: |
           pwd &&
           ls -la &&
           . /home/hussam/init_db_server.sh &&
           pytest tests/ -o log_cli=true  --doctest-modules --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage
+          path: |
+            .coverage
+            coverage.xml
+            htmlcov
+            junit
