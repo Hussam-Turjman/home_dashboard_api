@@ -14,5 +14,5 @@ jobs:
         run: |
           pwd &&
           ls -la &&
-          ls /etc/postgresql/17/main/pg_hba.conf &&
+          ls /home/hussam/init_db_server.sh &&
           pytest tests/ --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
