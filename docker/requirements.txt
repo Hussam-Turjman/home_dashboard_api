@@ -3,3 +3,8 @@ pytest
 pytest-cov
 sqlalchemy
 psycopg2
+uvicorn
+requests
+python-dotenv
+pyyaml
+passlib
