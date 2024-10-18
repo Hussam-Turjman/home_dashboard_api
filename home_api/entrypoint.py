@@ -113,7 +113,11 @@ class EntryPoint(object):
 
         if missing_res is not None:
             missing_res.extend(missing)
+
         return len(missing) == 0
+
+    def __repr__(self):
+        return f"EntryPoint(port={self.port}, host={self.host}, db_hostname={self.db_hostname}, db_user={self.db_user}, db_user_password={self.db_user_password}, db_name={self.db_name}, jwt_config={self.jwt_config}, jwt_algorithm={self.jwt_algorithm}, access_token_expiration={self.access_token_expiration}, crypt_context={self.crypt_context}, crypt_context_schemes={self.crypt_context_schemes}, pwd_context={self.pwd_context}, secret_key={self.secret_key})"
 
 
 entry_point = EntryPoint()

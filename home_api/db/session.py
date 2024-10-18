@@ -65,7 +65,7 @@ class Session(object):
                    db_user=db_user,
                    db_user_password=db_user_password,
                    d_Base=d_Base,
-                   auto_commit=auto_commit)
+                   auto_commit=auto_commit).init()
 
     def get_session(self):
         self.engine = sqlalchemy.create_engine(
