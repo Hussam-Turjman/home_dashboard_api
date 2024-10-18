@@ -4,6 +4,7 @@ from sqlalchemy import Column, Integer, String, DateTime, Boolean, func
 from typing import Callable
 from .checks import is_valid_email, is_strong_password, contains_whitespace, contains_numbers, \
     contains_special_characters
+from .utils import create_username
 
 
 class User(Base):
@@ -41,7 +42,7 @@ class User(Base):
         else:
             last_id = 0
         # Generate pseudo username based on the first name and last name and the last user id
-        username = f"{first_name.lower()[:2]}{last_name.lower()[:2]}{last_id + 1}"
+        username = create_username(first_name, last_name, last_id)
         # Check if the email is already in use
         if session.query(User).filter_by(email=email).first():
             raise ValueError(f"Email {email} already in use")
