@@ -7,7 +7,7 @@ import pytest
 
 cwd = os.path.join(os.path.dirname(__file__))
 parent_dir = os.path.join(cwd, "..")
-sys.path.append("/__w/home_dashboard_final/home_dashboard_final")
+sys.path.append(parent_dir)
 
 
 session = Session.create(d_Base=Base)
