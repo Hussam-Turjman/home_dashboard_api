@@ -3,7 +3,8 @@ import string
 
 
 def generate_password(length: int = 20):
-    alphabet = string.ascii_letters + string.digits
+    # Define the alphabet to contain all printable characters except whitespaces
+    alphabet = string.ascii_letters + string.digits + string.punctuation
     password = ''.join(secrets.choice(alphabet) for i in range(length))
     return password
 
