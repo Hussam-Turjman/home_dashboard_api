@@ -40,7 +40,7 @@ def test_create_user():
     instance.add(user)
     instance.commit()
     # Query the user and compare it with the created user
-    user_query = instance.query(User).first()[0]
+    user_query = instance.query(User).first()
 
     assert user_query.first_name == first_name
     assert user_query.last_name == last_name
