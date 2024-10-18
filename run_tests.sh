@@ -10,6 +10,8 @@ ENDPOINT=localhost
 ENDPOINT_PORT=5001
 JWT_SECRET_KEY=9cbb00b2ad4a8f872ea195289f125492976681e66cee4f55d52b4312a2083739
 
+cwd=$(pwd)
+
 # if .env file doesn't exist, create it and add the environment variables
 if [ ! -f .env ]; then
     echo "DB_USER=$DB_USER" >>.env
@@ -20,4 +22,8 @@ if [ ! -f .env ]; then
     echo "ENDPOINT_PORT=$ENDPOINT_PORT" >>.env
     echo "JWT_SECRET_KEY=$JWT_SECRET_KEY" >>.env
 fi
+
+echo "Current working directory: $cwd"
+# .env content
+cat .env
 pytest tests -o log_cli=true --doctest-modules --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
