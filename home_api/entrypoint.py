@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 import os
 import yaml
-from .path import PARENT_DIR
+from .etc import PARENT_DIR
 
 from passlib.context import CryptContext
 

@@ -2,6 +2,7 @@ from home_api.db.base import Base
 from home_api.db.dummy import Dummy
 from home_api.db.session import Session
 from home_api.db.user import User
+from home_api.db.utils import create_username, generate_password
 
 
 def run():

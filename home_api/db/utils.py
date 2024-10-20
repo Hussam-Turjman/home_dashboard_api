@@ -2,7 +2,9 @@ import secrets
 import string
 
 
-def generate_password(length: int = 20):
+def generate_password(length: int = 20, fixed=False):
+    if fixed:
+        return "sf923_rFfs;@e3f"
     # Define the alphabet to contain all printable characters except whitespaces
     alphabet = string.ascii_letters + string.digits + string.punctuation
     password = ''.join(secrets.choice(alphabet) for i in range(length))

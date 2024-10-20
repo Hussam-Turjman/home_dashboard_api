@@ -1,6 +1,6 @@
 import logging
 import os
-from .path import LOGS_DIR, LOG_FILENAME, NOW
+from .etc import LOGS_DIR, LOG_FILENAME, NOW
 
 logger = logging.getLogger("uvicorn.error")
 

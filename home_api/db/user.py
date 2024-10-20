@@ -1,10 +1,14 @@
 from .base import Base
 
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, func
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, func, ForeignKey
 from typing import Callable
 from .checks import is_valid_email, is_strong_password, contains_whitespace, contains_numbers, \
     contains_special_characters
 from .utils import create_username
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+import uuid
+import datetime
 
 
 class User(Base):
@@ -83,3 +87,50 @@ class User(Base):
         user = User(username=username, first_name=first_name, last_name=last_name, email=email,
                     password=hashed_password)
         return user
+
+
+class UserSession(Base):
+    __tablename__ = "user_session"
+    id = Column(UUID(as_uuid=True), primary_key=True,
+                name="id", unique=True, default=uuid.uuid4)
+
+    user_id = Column(Integer, ForeignKey("user.id"),
+                     name="user_id", nullable=False)
+    token = Column(String, name="token", nullable=False)
+    expires_at = Column(DateTime, name="expires_at", nullable=False)
+    active = Column(Boolean, name="active", nullable=False, default=True)
+    created_at = Column(DateTime, name="created_at", nullable=False)
+    time_updated = Column(DateTime(timezone=True), onupdate=func.now())
+
+    ip = Column(String, name="ip", nullable=False)
+    location = Column(String, name="location", nullable=False)
+    agent = Column(String, name="agent", nullable=False)
+
+    user = relationship("User", backref="user_session")
+
+    def __repr__(self):
+        return (f"<UserSession(id={self.id}, "
+                f"user_id={self.user_id}, "
+                f"token={self.token}, "
+                f"expires_at={self.expires_at}, "
+                f"active={self.active}, "
+                f"ip={self.ip}, "
+                f"location={self.location}, "
+                f"created_at={self.created_at}, "
+                f"time_updated={self.time_updated}, "
+                f"agent={self.agent}>")
+
+    @classmethod
+    def create_empty(cls, user_id: int):
+        return cls(
+            token="",
+            ip="",
+            location="",
+            agent="",
+            created_at=datetime.datetime.now(),
+            expires_at=datetime.datetime.now() + datetime.timedelta(days=1),
+            user_id=user_id,
+        )
+
+
+__all__ = ["User", "UserSession"]
