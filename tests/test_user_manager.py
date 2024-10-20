@@ -17,16 +17,23 @@ from home_api.managers.errors import ManagerErrors
 session = Session.create(d_Base=Base)
 
 
+def create_user(first_name, last_name, email, password):
+    user_manager = UserManager(db_session=session.instance)
+    user = user_manager.create_user(first_name=first_name,
+                                    last_name=last_name,
+                                    email=email,
+                                    password=password)
+    return user
+
+
 def test_create_user(auto_delete=True):
     first_name = "John"
     last_name = "Doe"
     email = f"{first_name}.{last_name}@gmail.com"
     password = generate_password(fixed=True)
     user_manager = UserManager(db_session=session.instance)
-    user = user_manager.create_user(first_name=first_name,
-                                    last_name=last_name,
-                                    email=email,
-                                    password=password)
+    user = create_user(first_name=first_name,
+                       last_name=last_name, email=email, password=password)
     assert user.first_name == first_name
     assert user.last_name == last_name
     assert user.email == email
@@ -38,11 +45,12 @@ def test_create_user(auto_delete=True):
         assert error == ManagerErrors.NOT_FOUND
         error = user_manager.delete_user_by_username(user.username)
         assert error == ManagerErrors.NOT_FOUND
-    return user
 
 
 def test_login():
-    user = test_create_user(auto_delete=False)
+    user = create_user(first_name="John", last_name="Doe", email="John.Doe@gmail.com",
+                       password=generate_password(fixed=True))
+
     user_manager = UserManager(db_session=session.instance)
     password = generate_password(fixed=True)
     query_user = user_manager.login_email(user.email, password)
@@ -56,7 +64,9 @@ def test_login():
 
 
 def test_delete_user():
-    user = test_create_user(auto_delete=False)
+    user = create_user(first_name="John", last_name="Doe", email="John.Doe@gmail.com",
+                       password=generate_password(fixed=True))
+
     user_manager = UserManager(db_session=session.instance)
     error = user_manager.delete_user_by_email(user.email)
     assert user == error
@@ -65,7 +75,9 @@ def test_delete_user():
 
 
 def test_verify_user():
-    user = test_create_user(auto_delete=False)
+    user = create_user(first_name="John", last_name="Doe", email="John.Doe@gmail.com",
+                       password=generate_password(fixed=True))
+
     user_manager = UserManager(db_session=session.instance)
     user = user_manager.verify_user(user.email, user.username)
     assert user.verified
@@ -74,7 +86,9 @@ def test_verify_user():
 
 
 def test_invalid_login():
-    user = test_create_user(auto_delete=False)
+    user = create_user(first_name="John", last_name="Doe", email="John.Doe@gmail.com",
+                       password=generate_password(fixed=True))
+
     user_manager = UserManager(db_session=session.instance)
     # verify user
     user = user_manager.verify_user(user.email, user.username)

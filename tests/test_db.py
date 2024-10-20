@@ -26,24 +26,31 @@ def test_session_connection():
     assert session.is_connected
 
 
+def create_user(first_name, last_name, email, password):
+    user = User.create(session=session.instance,
+                       first_name=first_name,
+                       last_name=last_name,
+                       email=email,
+                       password=password,
+                       hash_func=entry_point.pwd_context.hash
+                       )
+    # Add the user to the session
+    session.instance.add(user)
+    # Commit the changes
+    session.instance.commit()
+    return user
+
+
 def test_create_user(delete_user=True):
     instance = session.instance
     password = generate_password(fixed=True)
     first_name = "John"
     last_name = "Doe"
     email = f"{first_name}.{last_name}@gmail.com"
-    hash_func = entry_point.pwd_context.hash
 
-    user = User.create(session=instance,
-                       first_name=first_name,
-                       last_name=last_name,
-                       email=email,
-                       password=password,
-                       hash_func=hash_func
-                       )
+    user = create_user(first_name=first_name,
+                       last_name=last_name, email=email, password=password)
 
-    instance.add(user)
-    instance.commit()
     # Query the user and compare it with the created user
     user_query = (instance.query(User).filter(User.first_name == first_name).filter(
         User.last_name == last_name).filter(User.email == email
@@ -59,12 +66,13 @@ def test_create_user(delete_user=True):
     if delete_user:
         instance.delete(user_query)
         instance.commit()
-    return user_query
 
 
 def test_create_user_session():
     instance = session.instance
-    user = test_create_user(delete_user=False)
+    user = create_user(first_name="John", last_name="Doe", email="John.Doe@gmail.com",
+                       password=generate_password(fixed=True))
+
     user_session = UserSession.create_empty(user_id=user.id)
     instance.add(user_session)
     instance.commit()
@@ -92,7 +100,9 @@ def test_create_user_session():
 
 def test_create_energy_counter():
     instance = session.instance
-    user = test_create_user(delete_user=False)
+    user = create_user(first_name="John", last_name="Doe", email="John.Doe@gmail.com",
+                       password=generate_password(fixed=True))
+
     energy_counter = EnergyCounter.create_empty(user_id=user.id)
     instance.add(energy_counter)
     instance.commit()
@@ -121,8 +131,9 @@ def test_create_energy_counter():
 
 def test_create_energy_counter_reading():
     instance = session.instance
-    user = test_create_user(delete_user=False)
-    #
+    user = create_user(first_name="John", last_name="Doe", email="John.Doe@gmail.com",
+                       password=generate_password(fixed=True))
+
     energy_counter = EnergyCounter.create_empty(user_id=user.id)
     instance.add(energy_counter)
     instance.commit()
@@ -146,7 +157,9 @@ def test_create_energy_counter_reading():
 
 def test_create_account_entry():
     instance = session.instance
-    user = test_create_user(delete_user=False)
+    user = create_user(first_name="John", last_name="Doe", email="John.Doe@gmail.com",
+                       password=generate_password(fixed=True))
+
     entry = AccountEntry.create_empty(user_id=user.id)
     instance.add(entry)
     instance.commit()
@@ -164,3 +177,7 @@ def test_create_account_entry():
     instance.delete(entry)
     instance.delete(user)
     instance.commit()
+
+
+# if __name__ == "__main__":
+#     test_create_user_session()
