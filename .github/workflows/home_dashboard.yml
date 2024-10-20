@@ -16,7 +16,7 @@ jobs:
           pwd &&
           ls -la &&
           . /home/hussam/init_db_server.sh &&
-          ls && python3 update_secret_key.py && ./run_tests.sh
+          ls && ./run_tests.sh
       - name: Archive code coverage results
         uses: actions/upload-artifact@v4
         with:

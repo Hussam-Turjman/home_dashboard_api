@@ -24,6 +24,7 @@ if [ ! -f .env ]; then
 fi
 
 echo "Current working directory: $cwd"
+python3 update_secret_key.py
 # .env content
 cat .env
 pytest tests -o log_cli=true --doctest-modules --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
