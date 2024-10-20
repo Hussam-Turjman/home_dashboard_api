@@ -57,5 +57,6 @@ def test_create_user():
     instance.delete(user_query)
     instance.commit()
 
+
 # if __name__ == "__main__":
 #     test_create_user()
