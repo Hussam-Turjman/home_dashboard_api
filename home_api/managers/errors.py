@@ -12,6 +12,7 @@ class ManagerErrors(Enum):
     MULTIPLE_ENTRIES_FOUND = 7
     ENTRY_EXISTS = 8
     USER_ALREADY_LOGGED_IN = 9
+    USER_NOT_FOUND = 10
 
 
 def translate_manager_error(error: ManagerErrors) -> str:
@@ -35,6 +36,8 @@ def translate_manager_error(error: ManagerErrors) -> str:
         return "Entry exists"
     if error == ManagerErrors.USER_ALREADY_LOGGED_IN:
         return "User already logged in"
+    if error == ManagerErrors.USER_NOT_FOUND:
+        return "User not found"
     raise ValueError(f"Unknown manager error: {error}")
 
 

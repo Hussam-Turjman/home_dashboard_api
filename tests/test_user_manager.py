@@ -43,9 +43,9 @@ def test_create_user():
 
     user_manager.delete_user_by_email(email)
     error = user_manager.delete_user_by_email(email)
-    assert error == ManagerErrors.NOT_FOUND
+    assert error == ManagerErrors.USER_NOT_FOUND
     error = user_manager.delete_user_by_username(user.username)
-    assert error == ManagerErrors.NOT_FOUND
+    assert error == ManagerErrors.USER_NOT_FOUND
 
 
 def test_login_internal():
@@ -72,7 +72,7 @@ def test_delete_user():
     error = user_manager.delete_user_by_email(user.email)
     assert user == error
     error = user_manager.delete_user_by_username(user.username)
-    assert error == ManagerErrors.NOT_FOUND
+    assert error == ManagerErrors.USER_NOT_FOUND
 
 
 def test_verify_user():

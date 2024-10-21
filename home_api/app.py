@@ -9,6 +9,7 @@ from starlette import status
 from starlette.requests import Request
 import datetime
 from .entrypoint import entry_point
+from .routers.user import router as user_router
 
 
 @asynccontextmanager
@@ -53,8 +54,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # Include routers here
+app.include_router(user_router)
+
 
 # Order matters
 @app.exception_handler(RequestValidationError)
@@ -68,4 +70,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.get("/")
 async def root():
-    return {"message": "Hello Bigger Applications!"}
+    return {"message": "Hello World"}
+
+
+__all__ = ["app"]

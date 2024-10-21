@@ -23,14 +23,14 @@ class UserManager(object):
         user = self.db_session.query(User).filter_by(
             email=email).filter_by(username=username).first()
         if not user:
-            return ManagerErrors.NOT_FOUND
+            return ManagerErrors.USER_NOT_FOUND
         user.verified = True
         self.db_session.commit()
         return user
 
     def _check_user_login(self, user: User | None, password: str):
         if not user:
-            return ManagerErrors.NOT_FOUND
+            return ManagerErrors.USER_NOT_FOUND
         if not user.verified:
             return ManagerErrors.NOT_VERIFIED
         if not self.pwd_context.verify(password, user.password):
@@ -63,6 +63,7 @@ class UserManager(object):
             user_or_error = self._login_email(email, password)
         else:
             user_or_error = self._login_username(username, password)
+
         if isinstance(user_or_error, ManagerErrors):
             return user_or_error
         user = user_or_error
@@ -144,7 +145,7 @@ class UserManager(object):
             self.db_session.delete(user)
             self.db_session.commit()
         else:
-            return ManagerErrors.NOT_FOUND
+            return ManagerErrors.USER_NOT_FOUND
         return user
 
     def delete_user_by_username(self, username: str):
@@ -153,7 +154,7 @@ class UserManager(object):
             self.db_session.delete(user)
             self.db_session.commit()
         else:
-            return ManagerErrors.NOT_FOUND
+            return ManagerErrors.USER_NOT_FOUND
         return user
 
     def login(self, password, ip, location, agent, email=None, username=None) -> dict:
@@ -190,6 +191,7 @@ class UserManager(object):
             force_new_session=False,
             return_existing_session=True
         )
+
         if isinstance(session_or_error, ManagerErrors):
             return {
                 "error": True,
@@ -207,7 +209,7 @@ class UserManager(object):
     def verify_token(self, token, session_id) -> dict:
         try:
             payload = jwt.decode(token, entry_point.secret_key, algorithms=[
-                                 entry_point.jwt_algorithm])
+                entry_point.jwt_algorithm])
             input_type = payload["type"]
             sub = payload["sub"]
             if input_type == "email":

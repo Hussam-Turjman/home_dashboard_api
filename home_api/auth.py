@@ -38,6 +38,4 @@ class OAuth2PasswordBearerWithCookie(OAuth2):
         return param
 
 
-TOKEN_URL = "/api/authenticate"
-oauth2_scheme = OAuth2PasswordBearerWithCookie(
-    token_url=TOKEN_URL)  # OAuth2PasswordBearer(tokenUrl=TOKEN_URL)
+__all__ = ["OAuth2PasswordBearerWithCookie"]
