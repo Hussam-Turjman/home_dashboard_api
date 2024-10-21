@@ -106,7 +106,7 @@ class UserSession(Base):
     location = Column(String, name="location", nullable=False)
     agent = Column(String, name="agent", nullable=False)
 
-    user = relationship("User", backref="user_session")
+    user = relationship("User", backref="user_session", cascade="all,delete")
 
     def __repr__(self):
         return (f"<UserSession(id={self.id}, "

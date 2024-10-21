@@ -1,5 +1,6 @@
 import sys
 import os
+import datetime
 
 # fmt: off
 cwd = os.path.join(os.path.dirname(__file__))
@@ -26,7 +27,7 @@ def create_user(first_name, last_name, email, password):
     return user
 
 
-def test_create_user(auto_delete=True):
+def test_create_user():
     first_name = "John"
     last_name = "Doe"
     email = f"{first_name}.{last_name}@gmail.com"
@@ -39,25 +40,25 @@ def test_create_user(auto_delete=True):
     assert user.email == email
     assert not user.verified
     assert entry_point.pwd_context.verify(password, user.password)
-    if auto_delete:
-        user_manager.delete_user_by_email(email)
-        error = user_manager.delete_user_by_email(email)
-        assert error == ManagerErrors.NOT_FOUND
-        error = user_manager.delete_user_by_username(user.username)
-        assert error == ManagerErrors.NOT_FOUND
+
+    user_manager.delete_user_by_email(email)
+    error = user_manager.delete_user_by_email(email)
+    assert error == ManagerErrors.NOT_FOUND
+    error = user_manager.delete_user_by_username(user.username)
+    assert error == ManagerErrors.NOT_FOUND
 
 
-def test_login():
+def test_login_internal():
     user = create_user(first_name="John", last_name="Doe", email="John.Doe@gmail.com",
                        password=generate_password(fixed=True))
 
     user_manager = UserManager(db_session=session.instance)
     password = generate_password(fixed=True)
-    query_user = user_manager.login_email(user.email, password)
+    query_user = user_manager._login_email(user.email, password)
     assert query_user == ManagerErrors.NOT_VERIFIED
     # verify user
-    user = user_manager.verify_user(user.email, user.username)
-    query_user = user_manager.login_username(user.username, password)
+    user = user_manager._verify_user(user.email, user.username)
+    query_user = user_manager._login_username(user.username, password)
     assert query_user == user
     session.instance.delete(user)
     session.instance.commit()
@@ -79,26 +80,56 @@ def test_verify_user():
                        password=generate_password(fixed=True))
 
     user_manager = UserManager(db_session=session.instance)
-    user = user_manager.verify_user(user.email, user.username)
+    user = user_manager._verify_user(user.email, user.username)
     assert user.verified
     session.instance.delete(user)
     session.instance.commit()
 
 
-def test_invalid_login():
+def test_invalid_internal_login():
     user = create_user(first_name="John", last_name="Doe", email="John.Doe@gmail.com",
                        password=generate_password(fixed=True))
 
     user_manager = UserManager(db_session=session.instance)
     # verify user
-    user = user_manager.verify_user(user.email, user.username)
+    user = user_manager._verify_user(user.email, user.username)
     assert user.verified
-    query_user = user_manager.login_email(user.email, "invalid_password")
+    query_user = user_manager._login_email(user.email, "invalid_password")
     assert query_user == ManagerErrors.INVALID_PASSWORD
-    query_user = user_manager.login_username(user.username, "invalid_password")
+    query_user = user_manager._login_username(
+        user.username, "invalid_password")
     assert query_user == ManagerErrors.INVALID_PASSWORD
     session.instance.delete(user)
     session.instance.commit()
+
+
+def test_login():
+    user = create_user(first_name="John", last_name="Doe", email="John.Doe@gmail.com",
+                       password=generate_password(fixed=True))
+
+    user_manager = UserManager(db_session=session.instance)
+    # verify user
+    user = user_manager._verify_user(user.email, user.username)
+    assert user.verified
+    payload = user_manager.login(
+        password=generate_password(fixed=True),
+        ip="127.0.0.1",
+        location="Lagos",
+        agent="Mozilla",
+        username=user.username,
+        email=None,
+    )
+    assert not payload["error"]
+    token_payload = payload["payload"]
+    token = token_payload.token
+    session_id = token_payload.session_id
+    assert token
+    assert session_id
+    verification_payload = user_manager.verify_token(
+        token=token, session_id=session_id)
+    assert not verification_payload["error"]
+    user_query = user_manager.delete_user_by_email(user.email)
+    assert user_query == user
 
 # if __name__ == "__main__":
 #     manager = UserManager(db_session=session.instance)

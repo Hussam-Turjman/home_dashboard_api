@@ -34,7 +34,7 @@ class AccountEntry(Base):
 
     user_id = Column(Integer, ForeignKey("user.id"),
                      name="user_id", nullable=False)
-    user = relationship("User", backref="account_entry")
+    user = relationship("User", backref="account_entry", cascade="all,delete")
 
     @classmethod
     def create_empty(cls, user_id):

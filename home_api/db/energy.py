@@ -27,7 +27,7 @@ class EnergyCounter(Base):
 
     user_id = Column(Integer, ForeignKey("user.id"),
                      name="user_id", nullable=False)
-    user = relationship("User", backref="energy_counter")
+    user = relationship("User", backref="energy_counter", cascade="all,delete")
 
     def __repr__(self):
         return (f"<EnergyCounter(id={self.id}, "
@@ -71,7 +71,8 @@ class EnergyCounterReading(Base):
 
     counter_id = Column(UUID(as_uuid=True), ForeignKey(
         "energy_counter.id"), name="counter_id", nullable=False)
-    counter = relationship("EnergyCounter", backref="energy_counter_reading")
+    counter = relationship(
+        "EnergyCounter", backref="energy_counter_reading", cascade="all,delete")
 
     def convert_to_dict(self, counter_id, counter_type):
         return {

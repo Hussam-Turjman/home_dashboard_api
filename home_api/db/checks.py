@@ -1,6 +1,8 @@
 import re
 
 from uuid import UUID
+import socket
+import ipaddress
 
 
 def is_valid_uuid(uuid_to_test, version=4):
@@ -88,8 +90,19 @@ def is_strong_password(password: str) -> bool:
     return True
 
 
+def is_valid_ip_address(addr: str):
+    try:
+        ipaddress.ip_address(addr)
+    except ValueError:
+        return False
+    return True
+
+
+# Not legal
+
 __all__ = ["is_strong_password",
            "is_valid_email",
+           "is_valid_ip_address",
            "contains_whitespace",
            "contains_numbers",
            "contains_special_characters",

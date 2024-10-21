@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 import os
 import yaml
 from .etc import PARENT_DIR
-
+import datetime
 from passlib.context import CryptContext
 
 
@@ -58,7 +58,7 @@ class EntryPoint(object):
     @property
     def access_token_expiration(self):
         try:
-            return self.jwt_config["ACCESS_TOKEN_EXPIRE_MINUTES"]
+            return datetime.timedelta(minutes=self.jwt_config["ACCESS_TOKEN_EXPIRE_MINUTES"])
         except KeyError:
             return None
 
