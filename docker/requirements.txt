@@ -10,3 +10,4 @@ pyyaml
 passlib
 PyJWT
 httpx
+python-multipart
