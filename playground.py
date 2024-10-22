@@ -6,6 +6,7 @@ from home_api.managers.user_manager import UserManager
 
 def run():
     session_creator = Session.create(d_Base=Base)  # .drop_all().create_all()
+
     user_manager = UserManager(db_session=session_creator.instance)
     expense_manager = ExpenseManager(db_session=session_creator.instance)
 

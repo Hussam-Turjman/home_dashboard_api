@@ -11,6 +11,7 @@ import datetime
 from .entrypoint import entry_point
 from .routers.user import router as user_router
 from .routers.expense import router as expense_router
+from .routers.events import router as events_router
 
 
 @asynccontextmanager
@@ -58,6 +59,7 @@ app.add_middleware(
 # Include routers here
 app.include_router(router=user_router)
 app.include_router(router=expense_router)
+app.include_router(router=events_router)
 
 
 # Order matters

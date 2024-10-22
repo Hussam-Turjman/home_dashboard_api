@@ -17,6 +17,7 @@ class ManagerErrors(Enum):
     INVALID_DATE = 12
     INVALID_AMOUNT = 13
     ENTRY_NOT_FOUND = 14
+    NO_ENTRIES_FOUND = 15
 
 
 def translate_manager_error(error: ManagerErrors) -> str:
@@ -50,6 +51,8 @@ def translate_manager_error(error: ManagerErrors) -> str:
         return "Invalid amount"
     if error == ManagerErrors.ENTRY_NOT_FOUND:
         return "Entry not found"
+    if error == ManagerErrors.NO_ENTRIES_FOUND:
+        return "No entries found"
     raise ValueError(f"Unknown manager error: {error}")
 
 
