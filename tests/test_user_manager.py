@@ -9,7 +9,7 @@ sys.path.append(parent_dir)
 from home_api.entrypoint import entry_point
 from home_api.db.utils import generate_password
 from home_api.db.session import Session
-from home_api.db.base import Base
+from home_api.db.tables import Base
 from home_api.managers.user_manager import UserManager
 from home_api.managers.errors import ManagerErrors
 

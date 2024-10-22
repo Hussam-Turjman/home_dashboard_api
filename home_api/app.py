@@ -10,6 +10,7 @@ from starlette.requests import Request
 import datetime
 from .entrypoint import entry_point
 from .routers.user import router as user_router
+from .routers.expense import router as expense_router
 
 
 @asynccontextmanager
@@ -55,8 +56,8 @@ app.add_middleware(
 )
 
 # Include routers here
-app.include_router(router=user_router,
-                   tags=["User"])
+app.include_router(router=user_router)
+app.include_router(router=expense_router)
 
 
 # Order matters
@@ -64,7 +65,8 @@ app.include_router(router=user_router,
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     exc_str = f'{exc}'.replace('\n', ' ').replace('   ', ' ')
     # or logger.error(f'{exc}')
-    logger.error(request, exc_str)
+    # logger.error(request, exc_str)
+
     content = {'status_code': 10422, 'message': exc_str, 'data': None}
     return JSONResponse(content=content, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 

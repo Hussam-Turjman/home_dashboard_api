@@ -13,12 +13,14 @@ from ..pydantic_models.session import UserSessionModel, SessionPayloadModel
 from ..runtime import db_session
 
 URL_BASE = "/api/user"
-TOKEN_URL = f"{URL_BASE}/authenticate"
+TOKEN_URL = "/authenticate"
 oauth2_scheme = OAuth2PasswordBearerWithCookie(
-    token_url=TOKEN_URL)  # OAuth2PasswordBearer(tokenUrl=TOKEN_URL)
+    token_url=URL_BASE + TOKEN_URL)  # OAuth2PasswordBearer(tokenUrl=TOKEN_URL)
 
 user_manager = UserManager(db_session=db_session)
-router = APIRouter()
+router = APIRouter(
+    prefix=URL_BASE,
+)
 
 
 async def validate_user(session_id: str, token: Annotated[str, Depends(oauth2_scheme)]):
@@ -78,13 +80,13 @@ async def authenticate_user(response: JSONResponse, form_data: Annotated[OAuth2P
     return session
 
 
-@router.get(URL_BASE + "/is_session_active/{session_id}", response_model=UserSessionModel)
+@router.get("/is_session_active/{session_id}", response_model=UserSessionModel)
 async def is_session_active(user: Annotated[UserSessionModel, Depends(validate_user)]):
     # today = datetime.datetime.now().date()
     return user
 
 
-@router.post(URL_BASE + "/logout/{session_id}")
+@router.post("/logout/{session_id}")
 async def logout_user(session_id: str, token: Annotated[str, Depends(oauth2_scheme)]):
     if not is_valid_uuid(session_id):
         raise HTTPException(

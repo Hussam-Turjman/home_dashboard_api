@@ -14,6 +14,9 @@ class ManagerErrors(Enum):
     USER_ALREADY_LOGGED_IN = 9
     USER_NOT_FOUND = 10
     SESSION_NOT_FOUND = 11
+    INVALID_DATE = 12
+    INVALID_AMOUNT = 13
+    ENTRY_NOT_FOUND = 14
 
 
 def translate_manager_error(error: ManagerErrors) -> str:
@@ -41,6 +44,12 @@ def translate_manager_error(error: ManagerErrors) -> str:
         return "User not found"
     if error == ManagerErrors.SESSION_NOT_FOUND:
         return "Session not found"
+    if error == ManagerErrors.INVALID_DATE:
+        return "Invalid date"
+    if error == ManagerErrors.INVALID_AMOUNT:
+        return "Invalid amount"
+    if error == ManagerErrors.ENTRY_NOT_FOUND:
+        return "Entry not found"
     raise ValueError(f"Unknown manager error: {error}")
 
 

@@ -7,11 +7,9 @@ parent_dir = os.path.join(cwd, "..")
 sys.path.append(parent_dir)
 from home_api.entrypoint import entry_point
 from home_api.db.session import Session
-from home_api.db.base import Base
-from home_api.db.user import User, UserSession
+from home_api.db.tables import Base, User, UserSession, EnergyCounter, EnergyCounterReading, AccountEntry
+
 from home_api.db.utils import generate_password
-from home_api.db.energy import EnergyCounter, EnergyCounterReading
-from home_api.db.account import AccountEntry
 
 # fmt: on
 
@@ -177,7 +175,6 @@ def test_create_account_entry():
     instance.delete(entry)
     instance.delete(user)
     instance.commit()
-
 
 # if __name__ == "__main__":
 #     test_create_user_session()

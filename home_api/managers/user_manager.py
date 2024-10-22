@@ -1,6 +1,6 @@
 from passlib.context import CryptContext
 
-from ..db.user import User, UserSession
+from ..db.tables import User, UserSession
 
 from sqlalchemy.orm.session import Session as SQLSession
 from ..entrypoint import entry_point
@@ -9,6 +9,7 @@ from ..db.checks import is_valid_ip_address
 import datetime
 from ..pydantic_models.session import SessionPayloadModel, UserSessionModel
 import jwt
+from ..db.utils import generate_password
 
 
 class UserManager(object):
@@ -126,8 +127,6 @@ class UserManager(object):
         return ManagerErrors.SUCCESS
 
     def _delete_user(self, user):
-        self.db_session.query(UserSession).filter_by(
-            user_id=user.id).delete()
         self.db_session.delete(user)
         self.db_session.commit()
         return ManagerErrors.SUCCESS
@@ -145,6 +144,9 @@ class UserManager(object):
             self.db_session.commit()
             return ManagerErrors.SUCCESS
         return ManagerErrors.SESSION_NOT_FOUND
+
+    def _get_user_from_session(self, session):
+        return self.db_session.query(User).filter_by(id=session.user_id).first()
 
     def create_user(self, first_name: str, last_name: str, email: str, password: str) -> User:
         user = User.create(session=self.db_session,
@@ -271,7 +273,8 @@ class UserManager(object):
                         location=session.location,
                         agent=session.agent,
                         active=session.active,
-                        first_name=session.user.first_name,
+                        first_name=self._get_user_from_session(
+                            session).first_name,
                     ),
 
                 }
@@ -288,6 +291,40 @@ class UserManager(object):
                 "message": "Invalid token. Failed to decode token.",
                 "exception": e,
             }
+
+    def create_verified_dummy_user(self, first_name="John", last_name="Doe", password=generate_password(fixed=True)):
+        email = f"{first_name}.{last_name}@gmail.com"
+        # check if user exists
+        user = self.db_session.query(User).filter_by(email=email).first()
+        if user:
+            return user
+        user = self.create_user(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            password=password
+        )
+        user = self._verify_user(email=user.email, username=user.username)
+        return user
+
+    def try_delete_dummy_user(self):
+        user = self.db_session.query(User).filter_by(
+            email="John.Doe@gmail.com").first()
+        if user:
+            self._delete_user(user)
+            return True
+        return False
+
+    def create_dummy_user_session(self, user_id):
+        now = datetime.datetime.now()
+        end = now + datetime.timedelta(days=30)
+        session = UserSession(user_id=user_id, token="dummy",
+                              expires_at=end,
+                              created_at=now, ip="testclient",
+                              location="testlocation", agent="testagent")
+        self.db_session.add(session)
+        self.db_session.commit()
+        return session
 
 
 __all__ = ["UserManager"]
