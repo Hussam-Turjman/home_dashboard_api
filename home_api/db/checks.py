@@ -1,8 +1,8 @@
-import re
-
-from uuid import UUID
-import socket
 import ipaddress
+import re
+from uuid import UUID
+
+from ..debug import DEBUG_MODE
 
 
 def is_valid_uuid(uuid_to_test, version=4):
@@ -90,7 +90,7 @@ def is_strong_password(password: str) -> bool:
     return True
 
 
-def is_valid_ip_address(addr: str, debug=True):
+def is_valid_ip_address(addr: str, debug=DEBUG_MODE):
     if debug:
         if addr == "testclient":
             return True

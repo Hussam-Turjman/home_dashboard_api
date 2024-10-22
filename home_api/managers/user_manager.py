@@ -125,6 +125,27 @@ class UserManager(object):
         self.db_session.commit()
         return ManagerErrors.SUCCESS
 
+    def _delete_user(self, user):
+        self.db_session.query(UserSession).filter_by(
+            user_id=user.id).delete()
+        self.db_session.delete(user)
+        self.db_session.commit()
+        return ManagerErrors.SUCCESS
+
+    def _logout(self, session_id, token) -> ManagerErrors:
+        now = datetime.datetime.now()
+        user_session = (self.db_session.query(UserSession)
+                        .filter(UserSession.id == session_id)
+                        .filter(UserSession.active)
+                        .filter(UserSession.expires_at > now)
+                        .filter(UserSession.token == token)
+                        .first())
+        if user_session:
+            user_session.active = False
+            self.db_session.commit()
+            return ManagerErrors.SUCCESS
+        return ManagerErrors.SESSION_NOT_FOUND
+
     def create_user(self, first_name: str, last_name: str, email: str, password: str) -> User:
         user = User.create(session=self.db_session,
                            first_name=first_name,
@@ -139,11 +160,7 @@ class UserManager(object):
     def delete_user_by_email(self, email: str):
         user = self.db_session.query(User).filter_by(email=email).first()
         if user:
-            # delete all sessions
-            self.db_session.query(UserSession).filter_by(
-                user_id=user.id).delete()
-            self.db_session.delete(user)
-            self.db_session.commit()
+            self._delete_user(user)
         else:
             return ManagerErrors.USER_NOT_FOUND
         return user
@@ -152,10 +169,7 @@ class UserManager(object):
         user = self.db_session.query(User).filter_by(username=username).first()
         if user:
             # delete all sessions
-            self.db_session.query(UserSession).filter_by(
-                user_id=user.id).delete()
-            self.db_session.delete(user)
-            self.db_session.commit()
+            self._delete_user(user)
         else:
             return ManagerErrors.USER_NOT_FOUND
         return user
@@ -208,6 +222,17 @@ class UserManager(object):
                 session_id=str(session_or_error.id),
             ),
             "error": False}
+
+    def logout(self, session_id, token) -> dict:
+        res = self.verify_token(token=token, session_id=session_id)
+        if res["error"]:
+            return res
+        res = self._logout(session_id=session_id, token=token)
+        return {
+            "error": True if res is not ManagerErrors.SUCCESS else False,
+            "message": translate_manager_error(res),
+            "exception": ValueError(translate_manager_error(res)),
+        }
 
     def verify_token(self, token, session_id) -> dict:
         try:

@@ -1,14 +1,16 @@
 from typing import Annotated
-from ..db.checks import is_valid_uuid
+
 from fastapi import Depends, HTTPException, status, APIRouter, Request
-from ..auth import OAuth2PasswordBearerWithCookie
-from ..entrypoint import entry_point
-from ..logger import logger
-from ..managers.user_manager import UserManager
-from ..runtime import db_session, DEBUG_MODE
-from ..pydantic_models.session import UserSessionModel, SessionPayloadModel
 from fastapi.security import OAuth2PasswordRequestForm
 from starlette.responses import JSONResponse
+
+from ..auth import OAuth2PasswordBearerWithCookie
+from ..db.checks import is_valid_uuid
+from ..debug import DEBUG_MODE
+from ..entrypoint import entry_point
+from ..managers.user_manager import UserManager
+from ..pydantic_models.session import UserSessionModel, SessionPayloadModel
+from ..runtime import db_session
 
 URL_BASE = "/api/user"
 TOKEN_URL = f"{URL_BASE}/authenticate"
@@ -20,7 +22,6 @@ router = APIRouter()
 
 
 async def validate_user(session_id: str, token: Annotated[str, Depends(oauth2_scheme)]):
-
     if not is_valid_uuid(session_id):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -77,10 +78,29 @@ async def authenticate_user(response: JSONResponse, form_data: Annotated[OAuth2P
     return session
 
 
-@router.get(URL_BASE+"/is_session_active/{session_id}", response_model=UserSessionModel)
+@router.get(URL_BASE + "/is_session_active/{session_id}", response_model=UserSessionModel)
 async def is_session_active(user: Annotated[UserSessionModel, Depends(validate_user)]):
     # today = datetime.datetime.now().date()
     return user
+
+
+@router.post(URL_BASE + "/logout/{session_id}")
+async def logout_user(session_id: str, token: Annotated[str, Depends(oauth2_scheme)]):
+    if not is_valid_uuid(session_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid session_id",
+        )
+    res = user_manager.logout(session_id=session_id, token=token)
+    if res["error"]:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    else:
+        pass
+    return JSONResponse(content={"message": "Logged out successfully"})
 
 
 __all__ = ["router", "validate_user"]
