@@ -3,8 +3,9 @@ from ..db.checks import is_valid_uuid
 from fastapi import Depends, HTTPException, status, APIRouter, Request
 from ..auth import OAuth2PasswordBearerWithCookie
 from ..entrypoint import entry_point
+from ..logger import logger
 from ..managers.user_manager import UserManager
-from ..runtime import db_session
+from ..runtime import db_session, DEBUG_MODE
 from ..pydantic_models.session import UserSessionModel, SessionPayloadModel
 from fastapi.security import OAuth2PasswordRequestForm
 from starlette.responses import JSONResponse
@@ -19,6 +20,7 @@ router = APIRouter()
 
 
 async def validate_user(session_id: str, token: Annotated[str, Depends(oauth2_scheme)]):
+
     if not is_valid_uuid(session_id):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -26,6 +28,7 @@ async def validate_user(session_id: str, token: Annotated[str, Depends(oauth2_sc
         )
 
     res = user_manager.verify_token(token=token, session_id=session_id)
+
     if res["error"]:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -34,7 +37,8 @@ async def validate_user(session_id: str, token: Annotated[str, Depends(oauth2_sc
     else:
         payload = res["payload"]
         payload: UserSessionModel
-    payload.token = "********"
+    if not DEBUG_MODE:
+        payload.token = "********"
 
     return payload
 
@@ -68,8 +72,15 @@ async def authenticate_user(response: JSONResponse, form_data: Annotated[OAuth2P
                             httponly=True,
                             max_age=entry_point.access_token_expiration.total_seconds() // 60)
 
-        session.token = "********"
+        if not DEBUG_MODE:
+            session.token = "********"
     return session
+
+
+@router.get(URL_BASE+"/is_session_active/{session_id}", response_model=UserSessionModel)
+async def is_session_active(user: Annotated[UserSessionModel, Depends(validate_user)]):
+    # today = datetime.datetime.now().date()
+    return user
 
 
 __all__ = ["router", "validate_user"]

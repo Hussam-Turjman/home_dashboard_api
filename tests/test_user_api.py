@@ -1,8 +1,9 @@
 import sys
 import os
 import datetime
-from fastapi.testclient import TestClient
 
+from debugpy.adapter import access_token
+from fastapi.testclient import TestClient
 
 # fmt: off
 cwd = os.path.join(os.path.dirname(__file__))
@@ -18,14 +19,7 @@ client = TestClient(app)
 user_manager = UserManager(db_session=db_session)
 
 
-def test_read_root():
-    response = client.get("/")
-    assert response.status_code == 200
-    assert response.json() == {"message": "Hello World"}
-
-
-def test_authenticate_user():
-    url = "/api/user/authenticate"
+def create_user():
     # create a user
     first_name = "John"
     last_name = "Doe"
@@ -37,8 +31,19 @@ def test_authenticate_user():
                                     email=email,
                                     password=password)
     user_manager._verify_user(email=user.email, username=user.username)
-    # set client ip address
+    return user
 
+
+def test_read_root():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json() == {"message": "Hello World"}
+
+
+def test_authenticate_user():
+    url = "/api/user/authenticate"
+    user = create_user()
+    password = generate_password(fixed=True)
     # authenticate the user
     response = client.post(
         url, data={"username": user.username, "password": password})
@@ -47,10 +52,35 @@ def test_authenticate_user():
     assert "token" in payload.keys()
     assert "session_id" in payload.keys()
     assert "token_type" in payload.keys()
-    user_manager.delete_user_by_email(email)
+    user_manager.delete_user_by_email(user.email)
+
+
+def test_is_session_active():
+    url = "/api/user/authenticate"
+    user = create_user()
+    password = generate_password(fixed=True)
+    # authenticate the user
+    response = client.post(
+        url, data={"username": user.username, "password": password})
+    assert response.status_code == 200
+    payload = response.json()
+    session_id = payload["session_id"]
+    access_token = payload["token"]
+    auth_headers = {"cookie": f"access_token=\"Bearer {access_token}\""}
+
+    url = f"/api/user/is_session_active/{session_id}"
+    response = client.get(url,
+                          headers=auth_headers,
+                          )
+    payload = response.json()
+    assert response.status_code == 200, payload
+
+    user_manager.delete_user_by_email(user.email)
 
 # def run():
-#     test_authenticate_user()
-#
+#     user_manager.delete_user_by_username(username="jodo2")
+#     test_is_session_active()
+#     # test_authenticate_user()
+#     pass
 # if __name__ == "__main__":
-#     run()
+#      run()

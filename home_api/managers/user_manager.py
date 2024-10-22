@@ -151,6 +151,9 @@ class UserManager(object):
     def delete_user_by_username(self, username: str):
         user = self.db_session.query(User).filter_by(username=username).first()
         if user:
+            # delete all sessions
+            self.db_session.query(UserSession).filter_by(
+                user_id=user.id).delete()
             self.db_session.delete(user)
             self.db_session.commit()
         else:

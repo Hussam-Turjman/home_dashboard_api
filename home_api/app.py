@@ -55,7 +55,8 @@ app.add_middleware(
 )
 
 # Include routers here
-app.include_router(user_router)
+app.include_router(router=user_router,
+                   tags=["User"])
 
 
 # Order matters
