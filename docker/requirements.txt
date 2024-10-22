@@ -13,3 +13,4 @@ httpx
 python-multipart
 sse_starlette
 python-dateutil
+numpy
