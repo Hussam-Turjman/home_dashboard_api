@@ -105,4 +105,10 @@ async def logout_user(session_id: str, token: Annotated[str, Depends(oauth2_sche
     return JSONResponse(content={"message": "Logged out successfully"})
 
 
+@router.get("/{session_id}", response_model=UserSessionModel)
+async def get_user(user: Annotated[UserSessionModel, Depends(validate_user)]):
+    user.networth = user_manager.get_networth(user_id=user.user_id)
+    return user
+
+
 __all__ = ["router", "validate_user"]

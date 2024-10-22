@@ -1,6 +1,6 @@
 from passlib.context import CryptContext
 
-from ..db.tables import User, UserSession
+from ..db.tables import User, UserSession, AccountEntry
 
 from sqlalchemy.orm.session import Session as SQLSession
 from ..entrypoint import entry_point
@@ -10,6 +10,8 @@ import datetime
 from ..pydantic_models.session import SessionPayloadModel, UserSessionModel
 import jwt
 from ..db.utils import generate_password
+from ..db.utils import diff_month
+from dateutil.relativedelta import relativedelta
 
 
 class UserManager(object):
@@ -325,6 +327,60 @@ class UserManager(object):
         self.db_session.add(session)
         self.db_session.commit()
         return session
+
+    def get_networth(self, user_id: int):
+        today = datetime.datetime.now().date().replace(day=1)
+
+        # Get income
+        income = (self.db_session.query(AccountEntry).
+                  filter(AccountEntry.user_id == user_id).
+                  filter(AccountEntry.start_date <= today).
+                  filter(AccountEntry.amount > 0).
+                  order_by(AccountEntry.start_date).
+                  all())
+
+        income = self.sum_amount_until_date(income, today)
+
+        # Get expenses ordered by start date
+        expenses = (self.db_session.query(AccountEntry).
+                    filter(AccountEntry.user_id == user_id).
+                    filter(AccountEntry.start_date <= today).
+                    filter(AccountEntry.amount < 0).
+                    order_by(AccountEntry.start_date).
+                    all())
+        expenses = self.sum_amount_until_date(expenses, today)
+
+        for key in expenses.keys():
+            if key not in income.keys():
+                income[key] = 0
+        for key in income.keys():
+            if key not in expenses.keys():
+                expenses[key] = 0
+        monthly_savings = {}
+        for key in income.keys():
+            monthly_savings[key] = round(income[key] + expenses[key], 2)
+
+        total_networth = sum([value for value in monthly_savings.values()])
+        total_networth = round(total_networth, 2)
+        return total_networth
+
+    def sum_amount_until_date(self, account_entries, end_date):
+        res = {}
+        if len(account_entries) > 0:
+            start_date = account_entries[0].start_date
+
+            total_months = diff_month(end_date, start_date) + 1
+            for month in range(total_months):
+                month_amount = 0
+                current_month = start_date + relativedelta(months=month)
+                for entry in account_entries:
+
+                    if entry.start_date <= current_month <= entry.end_date:
+                        month_amount += entry.amount
+                # key is month and year only
+                key = current_month.strftime("%m-%Y")
+                res[key] = month_amount
+        return res
 
 
 __all__ = ["UserManager"]

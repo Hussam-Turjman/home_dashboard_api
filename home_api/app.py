@@ -12,6 +12,7 @@ from .entrypoint import entry_point
 from .routers.user import router as user_router
 from .routers.expense import router as expense_router
 from .routers.events import router as events_router
+from .routers.energy import router as energy_router
 
 
 @asynccontextmanager
@@ -47,6 +48,8 @@ app = FastAPI(title="Home Dashboard",
 origins = [
     "https://hussam-turjman.de",
     f"http://{entry_point.host}:{entry_point.port}",
+    "http://localhost:3000",
+    "http://localhost",
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -60,6 +63,7 @@ app.add_middleware(
 app.include_router(router=user_router)
 app.include_router(router=expense_router)
 app.include_router(router=events_router)
+app.include_router(router=energy_router)
 
 
 # Order matters
