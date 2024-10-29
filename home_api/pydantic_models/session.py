@@ -17,6 +17,7 @@ class UserSessionModel(BaseModel):
     email: str = ''
     username: str = ''
     first_name: str = ''
+    last_name: str = ''
     ip: str
     location: str
     agent: str

@@ -263,6 +263,7 @@ class UserManager(object):
                     "exception": ValueError(translate_manager_error(session)),
                 }
             else:
+                user = self._get_user_from_session(session)
                 return {
                     "error": False,
                     "payload": UserSessionModel(
@@ -275,8 +276,10 @@ class UserManager(object):
                         location=session.location,
                         agent=session.agent,
                         active=session.active,
-                        first_name=self._get_user_from_session(
-                            session).first_name,
+                        first_name=user.first_name,
+                        email=user.email,
+                        username=user.username,
+                        last_name=user.last_name,
                     ),
 
                 }
