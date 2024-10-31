@@ -9,7 +9,7 @@ class EnergyCounterModel(BaseModel):
     counter_type: str
     energy_unit: str
     frequency: str
-    user_id: int
+    user_id: int = -1
     base_price: float
     price: float
     start_date: datetime.date | str

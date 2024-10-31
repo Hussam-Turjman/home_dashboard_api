@@ -7,6 +7,7 @@ from ..db.utils import diff_month, create_dates_labels, find_invoice_by_counter_
 from sqlalchemy import func
 from calendar import monthrange
 import numpy as np
+from ..logger import logger
 
 
 class EnergyManager(object):
@@ -14,6 +15,84 @@ class EnergyManager(object):
 
     def __init__(self, db_session: SQLSession):
         self.db_session = db_session
+
+    def _add_energy_counter(self, user_id, counter_id_db, counter_id, counter_type, energy_unit,
+                            frequency, base_price, price, start_date, first_reading):
+        user = (self.db_session.query(User).filter(User.id == user_id)).first()
+        if not user:
+            return ManagerErrors.USER_NOT_FOUND
+        counter = (self.db_session.query(EnergyCounter).
+                   filter(EnergyCounter.user_id == user_id).
+                   filter(EnergyCounter.id == counter_id_db)).first()
+        if counter:
+            counter.counter_id = counter_id
+            counter.counter_type = counter_type
+            counter.energy_unit = energy_unit
+            counter.frequency = frequency
+            counter.base_price = base_price
+            counter.price = price
+            counter.start_date = start_date
+            counter.first_reading = first_reading
+        else:
+            counter = EnergyCounter(user_id=user_id,
+                                    counter_id=counter_id,
+                                    counter_type=counter_type,
+                                    energy_unit=energy_unit,
+                                    frequency=frequency,
+                                    base_price=base_price,
+                                    price=price,
+                                    start_date=start_date,
+                                    first_reading=first_reading)
+            self.db_session.add(counter)
+        self.db_session.commit()
+        return counter.convert_to_dict()
+
+    def add_energy_counter(self, user_id, counter_id_db, counter_id, counter_type, energy_unit,
+                           frequency, base_price, price, start_date, first_reading):
+        res = self._add_energy_counter(user_id=user_id,
+                                       counter_id=counter_id,
+                                       counter_id_db=counter_id_db,
+                                       counter_type=counter_type,
+                                       energy_unit=energy_unit,
+                                       frequency=frequency,
+                                       base_price=base_price,
+                                       price=price,
+                                       start_date=start_date,
+                                       first_reading=first_reading)
+        if isinstance(res, ManagerErrors):
+            return {
+                "error": True,
+                "message": translate_manager_error(res),
+                "exception": ValueError(translate_manager_error(res)),
+            }
+        return {
+            "error": False,
+            "payload": res,
+        }
+
+    def _delete_energy_counter(self, user_id, counter_id_db):
+        counter = (self.db_session.query(EnergyCounter).
+                   filter(EnergyCounter.user_id == user_id).
+                   filter(EnergyCounter.id == counter_id_db)).first()
+        if not counter:
+            return ManagerErrors.ENTRY_NOT_FOUND
+        self.db_session.delete(counter)
+        self.db_session.commit()
+        return counter.convert_to_dict()
+
+    def delete_energy_counter(self, user_id, counter_id_db):
+        res = self._delete_energy_counter(user_id=user_id,
+                                          counter_id_db=counter_id_db)
+        if isinstance(res, ManagerErrors):
+            return {
+                "error": True,
+                "message": translate_manager_error(res),
+                "exception": ValueError(translate_manager_error(res)),
+            }
+        return {
+            "error": False,
+            "payload": res,
+        }
 
     def get_energy_counters(self, user_id):
         counters = (self.db_session.query(EnergyCounter).
@@ -160,7 +239,14 @@ class EnergyManager(object):
         original_start_date = start_date
         # Get readings
         # FIXME: get min_start_date for each counter
-        min_start_date = datetime.date(2024, 9, 1)
+        # min_start_date = datetime.date(2024, 9, 1)
+        # get min_start_date of all counters
+        min_start_date = self.db_session.query(func.min(EnergyCounter.start_date)).filter(
+            EnergyCounter.user_id == user_id).first()
+        if not isinstance(min_start_date, datetime.date):
+            min_start_date = min_start_date[0]
+        # logger.info(f"min_start_date: {type(min_start_date)}")
+        # logger.info(f"min_start_date: {min_start_date}")
         start_date = min_start_date
         month_diff = diff_month(end_date, start_date)
         min_start_month = start_date.month

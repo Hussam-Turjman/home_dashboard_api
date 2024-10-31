@@ -71,7 +71,8 @@ app.include_router(router=energy_router)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     exc_str = f'{exc}'.replace('\n', ' ').replace('   ', ' ')
     # or logger.error(f'{exc}')
-    # logger.error(request, exc_str)
+    msg = f"{exc_str} {request}"
+    logger.error(msg)
 
     content = {'status_code': 10422, 'message': exc_str, 'data': None}
     return JSONResponse(content=content, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)

@@ -34,6 +34,7 @@ class User(Base):
     user_sessions = relationship("UserSession", cascade="all, delete-orphan")
     energy_counters = relationship(
         "EnergyCounter", cascade="all, delete-orphan")
+    # user_settings = relationship("UserSettings", cascade="all, delete-orphan")
 
     def __repr__(self):
         return (f"<User(id={self.id}, "
@@ -142,6 +143,27 @@ class UserSession(Base):
         )
 
 
+# class UserSettings(Base):
+#     __tablename__ = "user_settings"
+#     id = Column(UUID(as_uuid=True), primary_key=True,
+#                 name="id", unique=True, default=uuid.uuid4)
+#
+#     time_created = Column(DateTime(timezone=True), server_default=func.now())
+#     time_updated = Column(DateTime(timezone=True), onupdate=func.now())
+#
+#     user_id = Column(Integer, ForeignKey("user.id"),
+#                      name="user_id", nullable=False)
+#
+#     # Add settings fields here
+#     # Example
+#     # email_notification = Column(Boolean, name="email_notification", nullable=False, default=True)
+#
+#     def __repr__(self):
+#         pass
+#     @classmethod
+#     def create_empty(cls, user_id: int):
+#         pass
+
 class AccountEntry(Base):
     __tablename__ = "account_entry"
     id = Column(UUID(as_uuid=True), primary_key=True,
@@ -241,6 +263,20 @@ class EnergyCounter(Base):
             first_reading=0.0,
             user_id=user_id
         )
+
+    def convert_to_dict(self):
+        return {
+            "id": self.id,
+            "counter_id": self.counter_id,
+            "counter_type": self.counter_type,
+            "energy_unit": self.energy_unit,
+            "frequency": self.frequency,
+            "user_id": self.user_id,
+            "base_price": self.base_price,
+            "price": self.price,
+            "start_date": self.start_date,
+            "first_reading": self.first_reading
+        }
 
 
 class EnergyCounterReading(Base):

@@ -37,6 +37,46 @@ async def energy_counter_readings(user: Annotated[UserSessionModel, Depends(vali
     return readings
 
 
+@router.put("/add_energy_counter/{session_id}", response_model=EnergyCounterModel)
+async def add_energy_counter(user: Annotated[UserSessionModel, Depends(validate_user)],
+                             counter: EnergyCounterModel = Body(...)):
+    counter.start_date = datetime.datetime.strptime(
+        counter.start_date, "%Y-%m-%d").date()
+    res = energy_manager.add_energy_counter(user_id=user.user_id,
+                                            counter_id=counter.counter_id,
+                                            counter_id_db=counter.id,
+                                            counter_type=counter.counter_type,
+                                            energy_unit=counter.energy_unit,
+                                            frequency=counter.frequency,
+                                            base_price=counter.base_price,
+                                            price=counter.price,
+                                            start_date=counter.start_date,
+                                            first_reading=counter.first_reading)
+    if res["error"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=res["message"],
+        )
+    payload = res["payload"]
+    res = EnergyCounterModel.model_validate(payload).model_dump()
+    logger.info(f"Added energy counter: {res}")
+    return res
+
+
+@router.delete("/delete_energy_counter/{session_id}/{counter_id_db}", response_model=EnergyCounterModel)
+async def delete_energy_counter(user: Annotated[UserSessionModel, Depends(validate_user)],
+                                counter_id_db: str):
+    res = energy_manager.delete_energy_counter(
+        user_id=user.user_id, counter_id_db=counter_id_db)
+    if res["error"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=res["message"],
+        )
+    payload = res["payload"]
+    return EnergyCounterModel.model_validate(payload).model_dump()
+
+
 @router.put("/add_energy_counter_reading/{session_id}", response_model=EnergyCounterReadingModel)
 async def add_energy_counter_reading(user: Annotated[UserSessionModel, Depends(validate_user)],
                                      reading: EnergyCounterReadingModel = Body(...)):

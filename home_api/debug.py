@@ -1,3 +1,3 @@
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 __all__ = ["DEBUG_MODE"]
