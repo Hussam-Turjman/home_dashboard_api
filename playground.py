@@ -9,13 +9,7 @@ def run():
 
     user_manager = UserManager(db_session=session_creator.instance)
     expense_manager = ExpenseManager(db_session=session_creator.instance)
-
-    user = user_manager.create_verified_dummy_user()
-    for i in range(100):
-        counter = EnergyCounter.create_empty(user.id)
-        session_creator.instance.add(counter)
-    session_creator.instance.commit()
-    user_manager.delete_user_by_username(user.username)
+    user_manager.delete_user_by_username("jodo2")
 
 
 if __name__ == "__main__":
