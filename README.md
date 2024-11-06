@@ -1,4 +1,6 @@
 # Home Dashboard API
+![home_dashboard](https://github.com/Hussam-Turjman/home_dashboard_api/actions/workflows/home_dashboard.yml/badge.svg
+)
 
 ## Overview
 The **Home Dashboard API** is a RESTful web service built with [FastAPI](https://fastapi.tiangolo.com/). This API offers session-based authentication using OAuth2 JWT tokens managed via HTTP cookies. It enables users to perform CRUD operations on user accounts, manage personal expenses, and gain insights into financial metrics such as income, savings, and expenses, both on a monthly basis and over longer time periods.
