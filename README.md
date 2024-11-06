@@ -1,5 +1,5 @@
 # Home Dashboard API
-![home_dashboard](https://github.com/Hussam-Turjman/home_dashboard_api/actions/workflows/home_dashboard.yml/badge.svg
+![home_dashboard workflow](https://github.com/Hussam-Turjman/home_dashboard_api/actions/workflows/home_dashboard.yml/badge.svg
 )
 
 ## Overview
