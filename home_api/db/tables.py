@@ -262,6 +262,8 @@ class EnergyCounter(Base):
             energy_unit="unit",
             frequency="day",
             start_date=datetime.datetime.now().date(),
+            end_date=(datetime.datetime.now() +
+                      datetime.timedelta(days=365)).date(),
             first_reading=0.0,
             user_id=user_id
         )
