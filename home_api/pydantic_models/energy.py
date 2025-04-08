@@ -13,6 +13,7 @@ class EnergyCounterModel(BaseModel):
     base_price: float
     price: float
     start_date: datetime.date | str
+    end_date: datetime.date | str
     first_reading: float
 
     class Config:

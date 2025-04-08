@@ -17,7 +17,7 @@ class EnergyManager(object):
         self.db_session = db_session
 
     def _add_energy_counter(self, user_id, counter_id_db, counter_id, counter_type, energy_unit,
-                            frequency, base_price, price, start_date, first_reading):
+                            frequency, base_price, price, start_date, end_date, first_reading):
         user = (self.db_session.query(User).filter(User.id == user_id)).first()
         if not user:
             return ManagerErrors.USER_NOT_FOUND
@@ -32,6 +32,7 @@ class EnergyManager(object):
             counter.base_price = base_price
             counter.price = price
             counter.start_date = start_date
+            counter.end_date = end_date
             counter.first_reading = first_reading
         else:
             counter = EnergyCounter(user_id=user_id,
@@ -42,13 +43,14 @@ class EnergyManager(object):
                                     base_price=base_price,
                                     price=price,
                                     start_date=start_date,
+                                    end_date=end_date,
                                     first_reading=first_reading)
             self.db_session.add(counter)
         self.db_session.commit()
         return counter.convert_to_dict()
 
     def add_energy_counter(self, user_id, counter_id_db, counter_id, counter_type, energy_unit,
-                           frequency, base_price, price, start_date, first_reading):
+                           frequency, base_price, price, start_date, end_date, first_reading):
         res = self._add_energy_counter(user_id=user_id,
                                        counter_id=counter_id,
                                        counter_id_db=counter_id_db,
@@ -58,6 +60,7 @@ class EnergyManager(object):
                                        base_price=base_price,
                                        price=price,
                                        start_date=start_date,
+                                       end_date=end_date,
                                        first_reading=first_reading)
         if isinstance(res, ManagerErrors):
             return {
@@ -145,7 +148,7 @@ class EnergyManager(object):
                    filter(EnergyCounter.counter_id == counter_id).
                    filter(EnergyCounter.counter_type == counter_type)).all()
         if not counter:
-            return ManagerErrors.ENTRY_NOT_FOUND
+            return ManagerErrors.ENERGY_COUNTER_NOT_FOUND
         if len(counter) > 1:
             return ManagerErrors.MULTIPLE_ENTRIES_FOUND
         counter = counter[0]
@@ -281,7 +284,9 @@ class EnergyManager(object):
                 if current_date < counter.start_date:
                     data.append(0)
                     continue
-
+                if current_date > counter.end_date:
+                    data.append(0)
+                    continue
                 max_reading = (self.db_session.query(func.max(EnergyCounterReading.reading)).
                                join(EnergyCounter).
                                filter(EnergyCounter.user_id == user_id).
@@ -297,22 +302,22 @@ class EnergyManager(object):
                 else:
                     price = 0.0
                 data.append(base_price + price)
-            invoice_idx = find_invoice_by_counter_id(
-                invoices=invoices, counter_id_in=counter.counter_id)
-            if invoice_idx is not None:
-                new_label = invoices[invoice_idx]["label"].split("-")[0]
-                new_label = f"{new_label}-{label}"
-                invoices[invoice_idx]["label"] = new_label
-                invoices[invoice_idx]["data"] = [invoices[invoice_idx]["data"][i] + data[i] for i in
-                                                 range(len(data))]
-
-            else:
-                invoices.append(
-                    {
-                        "data": data,
-                        "label": label
-                    }
-                )
+            # invoice_idx = find_invoice_by_counter_id(
+            #     invoices=invoices, counter_id_in=counter.counter_id)
+            # if invoice_idx is not None:
+            #     new_label = invoices[invoice_idx]["label"].split("-")[0]
+            #     new_label = f"{new_label}-{label}"
+            #     invoices[invoice_idx]["label"] = new_label
+            #     invoices[invoice_idx]["data"] = [invoices[invoice_idx]["data"][i] + data[i] for i in
+            #                                      range(len(data))]
+            #
+            # else:
+            invoices.append(
+                {
+                    "data": data,
+                    "label": label
+                }
+            )
 
         # Add extra label for total sum for each month
         total_sum = []
@@ -336,6 +341,7 @@ class EnergyManager(object):
         for record in invoices:
             record["data"] = np.delete(
                 record["data"], to_remove_indexes).tolist()
+
         start_date = original_start_date
 
         return {

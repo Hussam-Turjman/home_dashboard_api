@@ -51,6 +51,7 @@ async def add_energy_counter(user: Annotated[UserSessionModel, Depends(validate_
                                             base_price=counter.base_price,
                                             price=counter.price,
                                             start_date=counter.start_date,
+                                            end_date=counter.end_date,
                                             first_reading=counter.first_reading)
     if res["error"]:
         raise HTTPException(

@@ -231,6 +231,7 @@ class EnergyCounter(Base):
     frequency = Column(String, name="frequency",
                        nullable=False)  # Monthly, yearly, etc
     start_date = Column(Date, name="start_date", nullable=False)
+    end_date = Column(Date, name="end_date", nullable=False)
     first_reading = Column(Float, name="first_reading", nullable=False)
 
     user_id = Column(Integer, ForeignKey("user.id"),
@@ -248,6 +249,7 @@ class EnergyCounter(Base):
                 f"base_price={self.base_price}, "
                 f"price={self.price}, "
                 f"start_date={self.start_date}, "
+                f"end_date={self.end_date}, "
                 f"first_reading={self.first_reading}")
 
     @classmethod
@@ -275,6 +277,7 @@ class EnergyCounter(Base):
             "base_price": self.base_price,
             "price": self.price,
             "start_date": self.start_date,
+            "end_date": self.end_date,
             "first_reading": self.first_reading
         }
 

@@ -18,6 +18,7 @@ class ManagerErrors(Enum):
     INVALID_AMOUNT = 13
     ENTRY_NOT_FOUND = 14
     NO_ENTRIES_FOUND = 15
+    ENERGY_COUNTER_NOT_FOUND = 16
 
 
 def translate_manager_error(error: ManagerErrors) -> str:
@@ -53,6 +54,8 @@ def translate_manager_error(error: ManagerErrors) -> str:
         return "Entry not found"
     if error == ManagerErrors.NO_ENTRIES_FOUND:
         return "No entries found"
+    if error == ManagerErrors.ENERGY_COUNTER_NOT_FOUND:
+        return "Energy counter not found"
     raise ValueError(f"Unknown manager error: {error}")
 
 
