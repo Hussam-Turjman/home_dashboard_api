@@ -20,6 +20,11 @@ class ManagerErrors(Enum):
     NO_ENTRIES_FOUND = 15
     ENERGY_COUNTER_NOT_FOUND = 16
     DUPLICATE_ENERGY_COUNTER = 17
+    ENERGY_COUNTER_INVALID_FREQUENCY = 18
+    ENERGY_COUNTER_INVALID_READING_DATE = 19
+    ENERGY_COUNTER_INVALID_READING = 20
+    NOT_ENOUGH_ENERGY_COUNTER_READINGS = 21
+    FEATURE_NOT_IMPLEMENTED = 22
 
 
 def translate_manager_error(error: ManagerErrors) -> str:
@@ -59,6 +64,20 @@ def translate_manager_error(error: ManagerErrors) -> str:
         return "Energy counter not found"
     if error == ManagerErrors.DUPLICATE_ENERGY_COUNTER:
         return "Duplicate energy counter"
+    if error == ManagerErrors.ENERGY_COUNTER_INVALID_FREQUENCY:
+        return "Energy counter invalid frequency. Valid values are ['daily', 'monthly', 'yearly']"
+    if error == ManagerErrors.ENERGY_COUNTER_INVALID_READING_DATE:
+        return "Energy counter invalid reading date. Reading date must be between start date and end date and greater than previous reading date"
+
+    if error == ManagerErrors.ENERGY_COUNTER_INVALID_READING:
+        return "Energy counter invalid reading. Reading must be greater than previous reading"
+
+    if error == ManagerErrors.NOT_ENOUGH_ENERGY_COUNTER_READINGS:
+        return "Not enough energy counter readings. At least two readings are required to calculate the consumption"
+
+    if error == ManagerErrors.FEATURE_NOT_IMPLEMENTED:
+        return "Feature not implemented"
+
     raise ValueError(f"Unknown manager error: {error}")
 
 

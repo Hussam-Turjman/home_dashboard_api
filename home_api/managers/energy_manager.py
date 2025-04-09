@@ -3,7 +3,7 @@ from sqlalchemy.orm.session import Session as SQLSession
 from .errors import ManagerErrors, translate_manager_error
 from ..db.tables import EnergyCounter, EnergyCounterReading, User
 import datetime
-from ..db.utils import diff_month, create_dates_labels, find_invoice_by_counter_id
+from ..db.utils import diff_day, create_dates_labels, to_month_year_str, find_invoice_by_counter_id
 from sqlalchemy import func
 from calendar import monthrange
 import numpy as np
@@ -19,15 +19,18 @@ class EnergyManager(object):
 
     def _add_energy_counter(self, user_id, counter_id_db, counter_id, counter_type, energy_unit,
                             frequency, base_price, price, start_date, end_date, first_reading):
+        if frequency not in ["daily", "monthly", "yearly"]:
+            return ManagerErrors.ENERGY_COUNTER_INVALID_FREQUENCY
+
         user = (self.db_session.query(User).filter(User.id == user_id)).first()
         if not user:
             return ManagerErrors.USER_NOT_FOUND
-        maybe_duplicate = (self.db_session.query(EnergyCounter).
-                           filter(EnergyCounter.counter_id == counter_id).
-                           filter(EnergyCounter.user_id == user_id).
-                           filter(EnergyCounter.counter_type == counter_type)).first()
-        if maybe_duplicate:
-            return ManagerErrors.DUPLICATE_ENERGY_COUNTER
+        # maybe_duplicate = (self.db_session.query(EnergyCounter).
+        #                    filter(EnergyCounter.counter_id == counter_id).
+        #                    filter(EnergyCounter.user_id == user_id).
+        #                    filter(EnergyCounter.counter_type == counter_type)).first()
+        # if maybe_duplicate:
+        #     return ManagerErrors.DUPLICATE_ENERGY_COUNTER
 
         counter = (self.db_session.query(EnergyCounter).
                    filter(EnergyCounter.user_id == user_id).
@@ -136,6 +139,30 @@ class EnergyManager(object):
         if len(counter) > 1:
             return ManagerErrors.MULTIPLE_ENTRIES_FOUND
         counter = counter[0]
+        if reading_date > counter.end_date:
+            return ManagerErrors.ENERGY_COUNTER_INVALID_READING_DATE
+        if reading_date < counter.start_date:
+            return ManagerErrors.ENERGY_COUNTER_INVALID_READING_DATE
+        previous_reading_object = (self.db_session.query(EnergyCounterReading).
+                                   filter(
+                                       EnergyCounterReading.counter_id == counter.id)
+                                   .order_by(EnergyCounterReading.reading_date.desc()).first())
+        if not previous_reading_object:
+            previous_reading = counter.first_reading
+            previous_reading_date = counter.start_date
+        else:
+            previous_reading = previous_reading_object.reading
+            previous_reading_date = previous_reading_object.reading_date
+        logger.info(
+            f"previous_reading: {previous_reading}, previous_reading_date: {previous_reading_date}")
+
+        if str(previous_reading_object.id) != str(entry_id):
+            # print(f"entry_id: {entry_id}, previous_reading_object.id: {previous_reading_object.id}")
+            if reading_date <= previous_reading_date:
+                return ManagerErrors.ENERGY_COUNTER_INVALID_READING_DATE
+            if reading < previous_reading:
+                return ManagerErrors.ENERGY_COUNTER_INVALID_READING
+
         entry = (self.db_session.query(EnergyCounterReading).
                  filter(EnergyCounterReading.id == entry_id)
                  ).first()
@@ -148,7 +175,7 @@ class EnergyManager(object):
                                          counter_id=counter.id,
                                          reading=reading,
                                          reading_date=reading_date)
-        self.db_session.add(entry)
+            self.db_session.add(entry)
         self.db_session.commit()
         return entry.convert_to_dict(counter_id=counter_id, counter_type=counter_type)
 
@@ -192,131 +219,175 @@ class EnergyManager(object):
                     filter(EnergyCounter.user_id == user_id).
                     # filter(EnergyCounter.start_date <= start_date).
                     all())
-        if not counters:
+        if len(counters) == 0:
             return {
                 "x_labels": [],
-                "invoices": [],
+                "consumption": [],
                 "start_month": start_date.month,
                 "start_year": start_date.year,
                 "end_month": end_date.month,
                 "end_year": end_date.year
             }
 
-        counters = sorted(counters, key=lambda x: x.start_date)
-        counters = list(counters)
-        if len(counters) == 0:
-            return ManagerErrors.NO_ENTRIES_FOUND
-
-        original_start_date = start_date
-        # Get readings
-        # FIXME: get min_start_date for each counter
-        # min_start_date = datetime.date(2024, 9, 1)
-        # get min_start_date of all counters
-        min_start_date = self.db_session.query(func.min(EnergyCounter.start_date)).filter(
-            EnergyCounter.user_id == user_id).first()
-        if not isinstance(min_start_date, datetime.date):
-            min_start_date = min_start_date[0]
-        # logger.info(f"min_start_date: {type(min_start_date)}")
-        # logger.info(f"min_start_date: {min_start_date}")
-        start_date = min_start_date
-        month_diff = diff_month(end_date, start_date)
-        min_start_month = start_date.month
-        min_start_year = start_date.year
-        end_month = end_date.month
-        end_year = end_date.year
-        x_labels = create_dates_labels(
-            min_start_year=min_start_year,
-            min_start_month=min_start_month,
-            month_diff=month_diff,
-            end_month=end_month,
-            end_year=end_year,
-            include_last_month=include_last_month,
-            to_dates=False
-        )
-        # convert labels to dates
-        x_labels_dates = [datetime.datetime.strptime(
-            label, "%b %Y").date() for label in x_labels]
-        invoices = []
-
+        counters_overview = []
+        x_labels = None
+        all_data = []
         for counter in counters:
-            label = f"{counter.counter_type}-{counter.counter_id}"
-            data = []
-            base_price = counter.base_price
-
-            first_reading = counter.first_reading
-            previous_reading = first_reading
-            for idx, date in enumerate(x_labels_dates):
-                price = counter.price
-                last_day = monthrange(date.year, date.month)[1]
-                current_date = datetime.date(date.year, date.month, last_day)
-                if current_date < counter.start_date:
-                    data.append(0)
-                    continue
-                if current_date > counter.end_date:
-                    data.append(0)
-                    continue
-                max_reading = (self.db_session.query(func.max(EnergyCounterReading.reading)).
-                               join(EnergyCounter).
-                               filter(EnergyCounter.user_id == user_id).
-                               filter(EnergyCounter.id == counter.id).
-                               filter(EnergyCounterReading.reading_date <= current_date).
-                               first())
-
-                max_reading = max_reading[0] if max_reading else None
-
-                if max_reading:
-                    price *= (max_reading - previous_reading)
-                    previous_reading = max_reading
-                else:
-                    price = 0.0
-                data.append(base_price + price)
-            # invoice_idx = find_invoice_by_counter_id(
-            #     invoices=invoices, counter_id_in=counter.counter_id)
-            # if invoice_idx is not None:
-            #     new_label = invoices[invoice_idx]["label"].split("-")[0]
-            #     new_label = f"{new_label}-{label}"
-            #     invoices[invoice_idx]["label"] = new_label
-            #     invoices[invoice_idx]["data"] = [invoices[invoice_idx]["data"][i] + data[i] for i in
-            #                                      range(len(data))]
-            #
-            # else:
-            invoices.append(
-                {
-                    "data": data,
-                    "label": label
-                }
+            counter_overview = self._get_energy_consumption_overview_for_counter(
+                user_id=user_id,
+                start_date=start_date,
+                end_date=end_date,
+                counter_db_id=counter.id,
+                include_last_month=include_last_month
             )
+            if isinstance(counter_overview, dict):
+                label = counter_overview["label"]
+                data = counter_overview["data"]
+                counters_overview.append({
+                    "label": label,
+                    "data": data,
+                })
+                all_data.append(data)
+                if x_labels is None:
+                    x_labels = counter_overview["x_labels"]
+            else:
+                return counter_overview
 
-        # Add extra label for total sum for each month
-        total_sum = []
-        for idx in range(len(x_labels_dates)):
-            t_sum = 0.0
-            for invoice in invoices:
-                t_sum += invoice["data"][idx]
-            total_sum.append(t_sum)
-        invoices.append(
-            {
-                "data": total_sum,
-                "label": "Total"
-            })
-        # filter results to only include dates starting from original_start_date
+        # compute the sum of all counters for each month
+        total = np.array(all_data)
+        total = np.sum(total, axis=0)
+        # convert to list
+        total = total.tolist()
+        # round to 2 decimal places
+        total = [round(x, 2) for x in total]
+        # convert to dict
+        counters_overview.append({
+            "label": "Total",
+            "data": total,
+        })
 
-        to_remove_indexes = []
-        for idx, date in enumerate(x_labels_dates):
-            if date < original_start_date:
-                to_remove_indexes.append(idx)
-        x_labels = np.delete(x_labels, to_remove_indexes).tolist()
-        for record in invoices:
-            record["data"] = np.delete(
-                record["data"], to_remove_indexes).tolist()
-
-        start_date = original_start_date
-
-        return {
+        res = {
             "x_labels": x_labels,
-            "invoices": invoices,
+            "consumption": counters_overview,
             "start_month": start_date.month,
             "start_year": start_date.year,
             "end_month": end_date.month,
             "end_year": end_date.year
         }
+        logger.info(res)
+        return res
+
+    @return_wrapper()
+    def get_energy_consumption_overview_for_counter(self, user_id: int,
+                                                    start_date: datetime.date,
+                                                    end_date: datetime.date,
+                                                    counter_db_id: str,
+                                                    include_last_month=False):
+        res = self._get_energy_consumption_overview_for_counter(
+            user_id=user_id,
+            start_date=start_date,
+            end_date=end_date,
+            counter_db_id=counter_db_id,
+            include_last_month=include_last_month
+        )
+        return res
+
+    def _get_energy_consumption_overview_for_counter(self, user_id: int,
+                                                     start_date: datetime.date,
+                                                     end_date: datetime.date,
+                                                     counter_db_id: str,
+                                                     include_last_month=True):
+        start_date = datetime.date(start_date.year, start_date.month, 1)
+        end_date = datetime.date(end_date.year, end_date.month, 1)
+
+        if start_date >= end_date:
+            return ManagerErrors.INVALID_DATE
+
+        counter = (self.db_session.query(EnergyCounter).
+                   filter(EnergyCounter.user_id == user_id).
+                   filter(EnergyCounter.id == counter_db_id)).first()
+
+        if not counter:
+            return ManagerErrors.ENERGY_COUNTER_NOT_FOUND
+
+        frequency = counter.frequency
+        if frequency not in ["daily", "monthly", "yearly"]:
+            return ManagerErrors.ENERGY_COUNTER_INVALID_FREQUENCY
+        if frequency != "monthly":
+            return ManagerErrors.FEATURE_NOT_IMPLEMENTED
+
+        first_reading = EnergyCounterReading(
+            counter_id=counter.id,
+            reading=counter.first_reading,
+            reading_date=counter.start_date
+        )
+        base_price = counter.base_price
+        price = counter.price
+        previous_reading = (self.db_session.query(EnergyCounterReading).
+                            filter(EnergyCounterReading.counter_id == counter.id).
+                            filter(EnergyCounterReading.reading_date < start_date).order_by(
+            EnergyCounterReading.reading_date.desc()).first()
+        )
+        if not previous_reading:
+            previous_reading = first_reading
+        readings = (self.db_session.query(EnergyCounterReading).
+                    filter(EnergyCounterReading.counter_id == counter.id).
+                    filter(EnergyCounterReading.reading_date >= start_date).
+                    filter(EnergyCounterReading.reading_date <= end_date).
+                    order_by(EnergyCounterReading.reading_date).all())
+        # set reading_date to last day of month
+        # for reading in readings:
+        #     reading.reading_date = datetime.date(
+        #         reading.reading_date.year, reading.reading_date.month, monthrange(reading.reading_date.year,
+        #                                                                            reading.reading_date.month)[1])
+        # return
+
+        # add previous reading to readings
+        readings = [previous_reading] + readings
+        dates = create_dates_labels(
+            start_date=start_date,
+            end_date=end_date,
+            include_last_month=include_last_month,
+            to_dates=False
+        )
+        consumption_map = {date: 0.0 for date in dates}
+
+        for idx in range(len(readings) - 1):
+            current_reading = readings[idx]
+            next_reading = readings[idx + 1]
+            current_reading_date = datetime.date(
+                current_reading.reading_date.year,
+                current_reading.reading_date.month,
+                1
+            )
+            next_reading_date = datetime.date(
+                next_reading.reading_date.year,
+                next_reading.reading_date.month,
+                monthrange(next_reading.reading_date.year,
+                           next_reading.reading_date.month)[1] if next_reading.reading_date.year == current_reading.reading_date.year and next_reading.reading_date.month == current_reading.reading_date.month else 1
+            )
+            diff_days = diff_day(next_reading_date,
+                                 current_reading_date)
+            if frequency == "monthly":
+                if diff_days not in [28, 29, 30, 31]:
+                    print(
+                        f"Should skip reading "
+                        f"{current_reading_date}"
+                        f" to {next_reading_date}"
+                        f" due to invalid diff_days: {diff_days}")
+                    # continue
+            current_month = to_month_year_str(next_reading.reading_date)
+            consumption = base_price + \
+                (price * (next_reading.reading - current_reading.reading))
+            consumption_map[current_month] = round(consumption, 2)
+
+        res = {
+            "label": f"{counter.counter_type[:3]}-{counter.counter_id[:3]}",
+            "counter_id": counter.counter_id,
+            "counter_type": counter.counter_type,
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
+            "x_labels": dates,
+            "data": [consumption_map[date] for date in dates],
+        }
+        return res

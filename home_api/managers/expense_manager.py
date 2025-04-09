@@ -218,20 +218,18 @@ class ExpenseManager(object):
             end_year = (now + relativedelta(years=1)).year
         start_date = datetime.date(start_year, start_month, 1)
         if start_date < min_start_date:
-            min_start_date = start_date
+            # min_start_date = start_date
             min_start_year = start_year
             min_start_month = start_month
         end_date = datetime.date(end_year, end_month, 1)
         if start_date >= end_date:
             return ManagerErrors.INVALID_DATE
-        month_diff = diff_month(end_date, min_start_date)
+
+        # month_diff = diff_month(end_date, min_start_date)
 
         x_labels = create_dates_labels(
-            min_start_year=min_start_year,
-            min_start_month=min_start_month,
-            month_diff=month_diff,
-            end_month=end_month,
-            end_year=end_year,
+            start_date=datetime.date(min_start_year, min_start_month, 1),
+            end_date=datetime.date(end_year, end_month, 1),
             include_last_month=include_last_month,
             to_dates=False
         )

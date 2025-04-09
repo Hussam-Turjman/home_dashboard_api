@@ -15,11 +15,54 @@ def diff_month(d1, d2):
     return (d1.year - d2.year) * 12 + d1.month - d2.month
 
 
-def create_dates_labels(min_start_year, min_start_month, month_diff, end_month, end_year,
-                        include_last_month, to_dates):
+def diff_year(d1, d2):
+    return d1.year - d2.year
+
+
+def diff_day(d1, d2):
+    return (d1 - d2).days
+
+
+def to_month_year_str(date: datetime.date):
+    return f"{id_2_month[date.month]} {date.year}"
+
+
+def create_dates_labels_yearly(start_year, end_year, include_end_year, to_dates):
     x_labels = []
-    year = min_start_year
-    for month in range(min_start_month, min_start_month + month_diff):
+    for year in range(start_year, end_year):
+        x_labels.append(f"{year}")
+    if include_end_year:
+        x_labels.append(f"{end_year}")
+    if to_dates:
+        x_labels = [datetime.datetime.strptime(
+            label, "%Y").date() for label in x_labels]
+    return x_labels
+
+
+def create_dates_labels_daily(start_date, end_date, include_last_day, to_dates):
+    x_labels = []
+    current_date = start_date
+    while current_date <= end_date:
+        x_labels.append(current_date.strftime("%Y-%m-%d"))
+        current_date += datetime.timedelta(days=1)
+    if include_last_day:
+        x_labels.append(end_date.strftime("%Y-%m-%d"))
+    if to_dates:
+        x_labels = [datetime.datetime.strptime(
+            label, "%Y-%m-%d").date() for label in x_labels]
+    return x_labels
+
+
+def create_dates_labels(start_date, end_date,
+                        include_last_month, to_dates):
+    start_month = start_date.month
+    start_year = start_date.year
+    end_month = end_date.month
+    end_year = end_date.year
+    month_diff = diff_month(end_date, start_date)
+    x_labels = []
+    year = start_year
+    for month in range(start_month, start_month + month_diff):
         month = month % 12
 
         if month == 0:
@@ -63,7 +106,12 @@ def create_username(first_name: str, last_name: str, last_id: int):
 __all__ = ["generate_password",
            "create_username",
            "diff_month",
+           "diff_year",
+           "diff_day",
            "month_2_id",
            "id_2_month",
            "find_invoice_by_counter_id",
-           "create_dates_labels"]
+           "create_dates_labels",
+           "create_dates_labels_yearly",
+           "create_dates_labels_daily",
+           "to_month_year_str", ]

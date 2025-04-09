@@ -54,6 +54,7 @@ async def add_energy_counter(user: Annotated[UserSessionModel, Depends(validate_
                                             end_date=counter.end_date,
                                             first_reading=counter.first_reading)
     if res["error"]:
+        logger.error(res["message"])
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=res["message"],
@@ -90,6 +91,7 @@ async def add_energy_counter_reading(user: Annotated[UserSessionModel, Depends(v
                                                     reading=reading.reading,
                                                     reading_date=reading.reading_date)
     if res["error"]:
+        logger.error(res["message"])
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=res["message"],
