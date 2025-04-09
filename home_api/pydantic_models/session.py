@@ -24,6 +24,7 @@ class UserSessionModel(BaseModel):
     expires_at: str
     active: bool
     networth: float = 0.0
+    networth_development_percentage: float = 0.0
 
 
 __all__ = ["SessionPayloadModel", "UserSessionModel"]

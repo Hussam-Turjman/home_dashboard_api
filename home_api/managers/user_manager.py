@@ -10,7 +10,7 @@ import datetime
 from ..pydantic_models.session import SessionPayloadModel, UserSessionModel
 import jwt
 from ..db.utils import generate_password
-from ..db.utils import diff_month
+from ..db.utils import diff_month, create_dates_labels
 from dateutil.relativedelta import relativedelta
 
 
@@ -331,9 +331,11 @@ class UserManager(object):
         self.db_session.commit()
         return session
 
-    def get_networth(self, user_id: int):
-        today = datetime.datetime.now().date().replace(day=1)
-
+    def get_networth(self, user_id: int, date: datetime.date = None):
+        if date is None:
+            today = datetime.datetime.now().date().replace(day=1)
+        else:
+            today = date.replace(day=1)
         # Get income
         income = (self.db_session.query(AccountEntry).
                   filter(AccountEntry.user_id == user_id).
@@ -384,6 +386,53 @@ class UserManager(object):
                 key = current_month.strftime("%m-%Y")
                 res[key] = month_amount
         return res
+
+    def first_account_entry_date(self, user_id):
+        first_entry = (self.db_session.query(AccountEntry).
+                       filter(AccountEntry.user_id == user_id).
+                       order_by(AccountEntry.start_date).
+                       first())
+        if first_entry:
+            return datetime.date(first_entry.start_date.year, first_entry.start_date.month, first_entry.start_date.day)
+        return None
+
+    def get_networth_development_percentage(self, user_id):
+        today = datetime.datetime.now().date().replace(day=1)
+        # today = datetime.date(2024, 10, 1)
+        previous_month = today - relativedelta(months=1)
+        # print(f"previous month: {previous_month}")
+        # print(f"today: {today}")
+        first_date = self.first_account_entry_date(user_id=user_id)
+        average_networth = 0.0
+        if first_date is None:
+            return 0.0
+        dates = create_dates_labels(
+            start_date=first_date,
+            end_date=previous_month,
+            include_last_month=True,
+            to_dates=True
+        )
+        for date in dates:
+            month_networth = self.get_networth(
+                user_id=user_id,
+                date=date
+            )
+            # print(date,month_networth)
+            average_networth += month_networth
+
+        average_networth = average_networth / len(dates)
+        # print(f"average networth: {average_networth}")
+        current_networth = self.get_networth(
+            user_id=user_id,
+            date=today
+        )
+        # print(f"current networth: {current_networth}")
+        # calculate percentage change
+        if average_networth == 0:
+            return 0.0
+        percentage_change = (
+            (current_networth - average_networth) / average_networth) * 100
+        return round(percentage_change, 2)
 
 
 __all__ = ["UserManager"]

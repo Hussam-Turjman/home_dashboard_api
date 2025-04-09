@@ -112,6 +112,8 @@ async def logout_user(session_id: str, token: Annotated[str, Depends(oauth2_sche
 @router.get("/{session_id}", response_model=UserSessionModel)
 async def get_user(user: Annotated[UserSessionModel, Depends(validate_user)]):
     user.networth = user_manager.get_networth(user_id=user.user_id)
+    user.networth_development_percentage = user_manager.get_networth_development_percentage(
+        user_id=user.user_id)
     if not DEBUG_MODE:
         user.user_id = -1
     return user
