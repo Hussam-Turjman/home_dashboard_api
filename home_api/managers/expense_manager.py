@@ -10,6 +10,7 @@ from ..pydantic_models.account import MonthExpensesTagModel
 from ..db.utils import diff_month, create_dates_labels
 from dateutil.relativedelta import relativedelta
 import numpy as np
+from .return_wrapper import return_wrapper
 
 
 class ExpenseManager(object):
@@ -76,6 +77,7 @@ class ExpenseManager(object):
         self.db_session.commit()
         return entry
 
+    @return_wrapper()
     def add_account_entry(self, user_id, entry_id, start_date: datetime.date,
                           end_date: datetime.date, amount: float, name: str,
                           tag: str) -> dict:
@@ -86,29 +88,12 @@ class ExpenseManager(object):
                                                 amount=amount,
                                                 name=name,
                                                 tag=tag)
-        if isinstance(account_entry, ManagerErrors):
-            return {
-                "error": True,
-                "message": translate_manager_error(account_entry),
-                "exception": ValueError(translate_manager_error(account_entry)),
-            }
-        return {
-            "error": False,
-            "payload": account_entry,
-        }
+        return account_entry
 
+    @return_wrapper()
     def delete_account_entry(self, user_id, entry_id) -> dict:
         res = self._delete_account_entry(user_id=user_id, entry_id=entry_id)
-        if isinstance(res, ManagerErrors):
-            return {
-                "error": True,
-                "message": translate_manager_error(res),
-                "exception": ValueError(translate_manager_error(res)),
-            }
-        return {
-            "error": False,
-            "payload": res,
-        }
+        return res
 
     def create_dummy_account_entry(self, user_id):
         entry = AccountEntry(start_date=datetime.date(2021, 1, 1),
@@ -186,6 +171,7 @@ class ExpenseManager(object):
             results = [result for result in results if result.value != 0]
         return results
 
+    @return_wrapper()
     def get_overview_chart(self, user_id,
                            start_month=None,
                            start_year=None,
@@ -206,16 +192,7 @@ class ExpenseManager(object):
                                        apply_cumulative_on_income=apply_cumulative_on_income,
                                        apply_cumulative_on_savings=apply_cumulative_on_savings
                                        )
-        if isinstance(res, ManagerErrors):
-            return {
-                "error": True,
-                "message": translate_manager_error(res),
-                "exception": ValueError(translate_manager_error(res)),
-            }
-        return {
-            "error": False,
-            "payload": res,
-        }
+        return res
 
     def _get_overview_chart(self, user_id,
                             start_month=None,

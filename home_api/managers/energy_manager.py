@@ -8,6 +8,7 @@ from sqlalchemy import func
 from calendar import monthrange
 import numpy as np
 from ..logger import logger
+from .return_wrapper import return_wrapper
 
 
 class EnergyManager(object):
@@ -21,6 +22,13 @@ class EnergyManager(object):
         user = (self.db_session.query(User).filter(User.id == user_id)).first()
         if not user:
             return ManagerErrors.USER_NOT_FOUND
+        maybe_duplicate = (self.db_session.query(EnergyCounter).
+                           filter(EnergyCounter.counter_id == counter_id).
+                           filter(EnergyCounter.user_id == user_id).
+                           filter(EnergyCounter.counter_type == counter_type)).first()
+        if maybe_duplicate:
+            return ManagerErrors.DUPLICATE_ENERGY_COUNTER
+
         counter = (self.db_session.query(EnergyCounter).
                    filter(EnergyCounter.user_id == user_id).
                    filter(EnergyCounter.id == counter_id_db)).first()
@@ -49,6 +57,7 @@ class EnergyManager(object):
         self.db_session.commit()
         return counter.convert_to_dict()
 
+    @return_wrapper()
     def add_energy_counter(self, user_id, counter_id_db, counter_id, counter_type, energy_unit,
                            frequency, base_price, price, start_date, end_date, first_reading):
         res = self._add_energy_counter(user_id=user_id,
@@ -62,16 +71,7 @@ class EnergyManager(object):
                                        start_date=start_date,
                                        end_date=end_date,
                                        first_reading=first_reading)
-        if isinstance(res, ManagerErrors):
-            return {
-                "error": True,
-                "message": translate_manager_error(res),
-                "exception": ValueError(translate_manager_error(res)),
-            }
-        return {
-            "error": False,
-            "payload": res,
-        }
+        return res
 
     def _delete_energy_counter(self, user_id, counter_id_db):
         counter = (self.db_session.query(EnergyCounter).
@@ -83,19 +83,11 @@ class EnergyManager(object):
         self.db_session.commit()
         return counter.convert_to_dict()
 
+    @return_wrapper()
     def delete_energy_counter(self, user_id, counter_id_db):
         res = self._delete_energy_counter(user_id=user_id,
                                           counter_id_db=counter_id_db)
-        if isinstance(res, ManagerErrors):
-            return {
-                "error": True,
-                "message": translate_manager_error(res),
-                "exception": ValueError(translate_manager_error(res)),
-            }
-        return {
-            "error": False,
-            "payload": res,
-        }
+        return res
 
     def get_energy_counters(self, user_id):
         counters = (self.db_session.query(EnergyCounter).
@@ -121,6 +113,7 @@ class EnergyManager(object):
         readings = tmp
         return readings
 
+    @return_wrapper()
     def add_energy_counter_reading(self, user_id, entry_id: str, counter_id, counter_type,
                                    reading, reading_date):
         res = self._add_energy_counter_reading(user_id=user_id,
@@ -129,16 +122,7 @@ class EnergyManager(object):
                                                counter_type=counter_type,
                                                reading=reading,
                                                reading_date=reading_date)
-        if isinstance(res, ManagerErrors):
-            return {
-                "error": True,
-                "message": translate_manager_error(res),
-                "exception": ValueError(translate_manager_error(res)),
-            }
-        return {
-            "error": False,
-            "payload": res,
-        }
+        return res
 
     def _add_energy_counter_reading(self, user_id: int, entry_id: str, counter_id: str,
                                     counter_type: str, reading: float,
@@ -168,19 +152,11 @@ class EnergyManager(object):
         self.db_session.commit()
         return entry.convert_to_dict(counter_id=counter_id, counter_type=counter_type)
 
+    @return_wrapper()
     def delete_energy_counter_reading(self, user_id, reading_id):
         res = self._delete_energy_counter_reading(user_id=user_id,
                                                   reading_id=reading_id)
-        if isinstance(res, ManagerErrors):
-            return {
-                "error": True,
-                "message": translate_manager_error(res),
-                "exception": ValueError(translate_manager_error(res)),
-            }
-        return {
-            "error": False,
-            "payload": res,
-        }
+        return res
 
     def _delete_energy_counter_reading(self, user_id, reading_id):
         reading = (self.db_session.query(EnergyCounterReading).
@@ -197,22 +173,14 @@ class EnergyManager(object):
         return reading.convert_to_dict(counter_id=counter.counter_id,
                                        counter_type=counter.counter_type)
 
+    @return_wrapper()
     def get_energy_consumption_overview(self, user_id, start_date,
                                         end_date, include_last_month=True):
         res = self._get_energy_consumption_overview(user_id=user_id,
                                                     start_date=start_date,
                                                     end_date=end_date,
                                                     include_last_month=include_last_month)
-        if isinstance(res, ManagerErrors):
-            return {
-                "error": True,
-                "message": translate_manager_error(res),
-                "exception": ValueError(translate_manager_error(res)),
-            }
-        return {
-            "error": False,
-            "payload": res,
-        }
+        return res
 
     def _get_energy_consumption_overview(self, user_id, start_date,
                                          end_date, include_last_month=True):
