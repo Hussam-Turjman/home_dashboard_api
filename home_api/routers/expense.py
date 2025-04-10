@@ -116,3 +116,28 @@ async def get_overview_chart(user: Annotated[UserSessionModel, Depends(validate_
 
     payload = res["payload"]
     return payload
+
+
+@router.get("/analysis_overview/{session_id}", response_model=dict)
+async def get_analysis_overview(user: Annotated[UserSessionModel, Depends(validate_user)],
+                                start_month: int, start_year: int,
+                                end_month: int, end_year: int, request: Request):
+    if start_month == 0 or start_year == 0 or end_month == 0 or end_year == 0:
+        start_date = None
+        end_date = None
+    else:
+        start_date = datetime.date(start_year, start_month, 1)
+        end_date = datetime.date(end_year, end_month, 1)
+    res = expense_manager.create_analysis_overview(
+        user_id=user.user_id,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    if res["error"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=res["message"],
+        )
+
+    payload = res["payload"]
+    return payload

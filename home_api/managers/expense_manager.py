@@ -7,10 +7,11 @@ from .errors import ManagerErrors, translate_manager_error
 from ..db.tables import AccountEntry, User
 from sqlalchemy import func
 from ..pydantic_models.account import MonthExpensesTagModel
-from ..db.utils import diff_month, create_dates_labels
+from ..db.utils import diff_month, create_dates_labels, get_freq, to_month_year_str
 from dateutil.relativedelta import relativedelta
 import numpy as np
 from .return_wrapper import return_wrapper
+import pandas as pd
 
 
 class ExpenseManager(object):
@@ -286,6 +287,150 @@ class ExpenseManager(object):
             "end_year": end_year
 
         }
+
+    def _create_tag_analysis(self, user_id, start_date, end_date, include_last_month=False):
+        # unique tags
+        tags = [tag[0]
+                for tag in self.db_session.query(AccountEntry.tag).distinct()]
+        all_dates = create_dates_labels(
+            start_date=start_date,
+            end_date=end_date,
+            include_last_month=include_last_month,
+            to_dates=False
+        )
+
+        # sum by tags from start_date to end_date for all entries
+        entries_data = self.db_session.query(
+            AccountEntry.tag,
+            func.sum(AccountEntry.amount),
+            AccountEntry.start_date,
+            AccountEntry.end_date
+        ).filter(
+            AccountEntry.user_id == user_id,
+            # AccountEntry.start_date >= start_date,
+            # AccountEntry.end_date <= end_date
+        ).group_by(
+            AccountEntry.tag,
+            AccountEntry.start_date,
+            AccountEntry.end_date
+        ).all()
+
+        tags_map = {tag: {"amount": np.zeros(
+            len(all_dates)).tolist(), "date": all_dates.copy()} for tag in tags}
+
+        for tag, total_amount, entry_start, entry_end in entries_data:
+            dates = create_dates_labels(
+                start_date=entry_start,
+                end_date=entry_end,
+                include_last_month=True,
+                to_dates=False
+            )
+            for date in dates:
+                if date in all_dates:
+                    # if tag == "#Income":
+                    #     print(tag,date,total_amount)
+                    tags_map[tag]["amount"][all_dates.index(
+                        date)] += total_amount
+
+        data = [
+            [tag, amount, date]
+            for tag in tags
+            for date, amount in zip(tags_map[tag]["date"], tags_map[tag]["amount"])
+        ]
+
+        df = pd.DataFrame(data, columns=["tag", "amount", "date"])
+
+        df_sum = df.groupby("tag", as_index=False).agg({"amount": "sum"})
+        # print(df_sum)
+        return df_sum
+
+    @return_wrapper()
+    def create_analysis_overview(self, user_id,
+                                 start_date: datetime.date,
+                                 end_date: datetime.date,
+                                 month_freq: int = 3):
+        tags = [tag[0]
+                for tag in self.db_session.query(AccountEntry.tag).distinct()]
+        # min start_date and max end_date
+        if start_date is None or end_date is None:
+            start_date, end_date = self.db_session.query(
+                func.min(AccountEntry.start_date),
+                func.max(AccountEntry.end_date)
+            ).filter(AccountEntry.user_id == user_id).first()
+        monthly_data = []
+        # start_date = datetime.date(2024, 1, 1)
+        # end_date = datetime.date(2027, 1, 1)
+        # date range every 6 months
+
+        frequency, period = get_freq(months=month_freq)
+        monthly_range = pd.date_range(
+            start_date, end_date, freq=frequency).to_period(period)
+        for date_range in monthly_range:
+            first_date = date_range.start_time.date()
+            last_date = (date_range.end_time + pd.DateOffset(days=1)).date()
+            print(f"Computing from {first_date} to {last_date}")
+            df_sum = self._create_tag_analysis(user_id=user_id,
+                                               start_date=first_date,
+                                               end_date=last_date,
+                                               include_last_month=False)
+            monthly_data.append([first_date, last_date, df_sum])
+
+        df_overview = pd.DataFrame(
+            columns=["income", "expenses", "savings", "start_date", "end_date"])
+        x_labels = []
+        tags_details = [
+            {
+                "label": tag,
+                "data": []
+            } for tag in tags
+        ]
+        analysis_overview = [
+            {
+                "label": tag,
+                "data": []
+            } for tag in ["income", "expenses", "savings"]
+        ]
+        for idx, (first_date, last_date, df_sum) in enumerate(monthly_data):
+            label = to_month_year_str(first_date) + \
+                "-" + to_month_year_str(last_date)
+            x_labels.append(label)
+            for row in df_sum.itertuples():
+                tag = row.tag
+                amount = row.amount
+                for entry in tags_details:
+                    if entry["label"] == tag:
+                        entry["data"].append(round(amount, 2))
+                        break
+
+            income = df_sum[df_sum["amount"] > 0]["amount"].sum()
+            expenses = df_sum[df_sum["amount"] < 0]["amount"].sum()
+            savings = income + expenses
+
+            df_overview.loc[idx] = [income, expenses,
+                                    savings, first_date, last_date]
+            for entry in analysis_overview:
+                if entry["label"] == "income":
+                    entry["data"].append(round(income.item(), 2))
+                elif entry["label"] == "expenses":
+                    entry["data"].append(round(expenses.item(), 2))
+                elif entry["label"] == "savings":
+                    entry["data"].append(round(savings.item(), 2))
+
+        for entry in analysis_overview:
+            entry["label"] = entry["label"].capitalize()
+
+        res = {
+            "x_labels": x_labels,
+            "tags_details": tags_details,
+            "analysis_overview": analysis_overview,
+            "start_year": start_date.year,
+            "start_month": start_date.month,
+            "end_year": end_date.year,
+            "end_month": end_date.month,
+            "frequency": frequency,
+            "period": period
+        }
+        return res
 
 
 __all__ = ["ExpenseManager"]

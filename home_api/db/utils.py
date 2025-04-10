@@ -103,6 +103,12 @@ def create_username(first_name: str, last_name: str, last_id: int):
     return username
 
 
+def get_freq(months: int):
+    frequency = f"{months}ME"
+    period = f"{months}M"
+    return frequency, period
+
+
 __all__ = ["generate_password",
            "create_username",
            "diff_month",
@@ -114,4 +120,6 @@ __all__ = ["generate_password",
            "create_dates_labels",
            "create_dates_labels_yearly",
            "create_dates_labels_daily",
-           "to_month_year_str", ]
+           "to_month_year_str",
+           "get_freq"
+           ]

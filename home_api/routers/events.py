@@ -12,7 +12,7 @@ from sse_starlette.sse import EventSourceResponse
 import json
 import asyncio
 
-MESSAGE_STREAM_RETRY_TIMEOUT = 15000  # milisecond
+MESSAGE_STREAM_RETRY_TIMEOUT = 15000  # millisecond
 MESSAGE_STREAM_DELAY = 60  # second
 
 URL_BASE = "/api/events"
