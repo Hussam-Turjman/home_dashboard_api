@@ -144,3 +144,16 @@ async def get_energy_consumption_overview(user: Annotated[UserSessionModel, Depe
 
     payload = res["payload"]
     return payload
+
+
+@router.get("/energy_consumption_total/{session_id}", response_model=dict)
+async def get_total_energy_consumption(user: Annotated[UserSessionModel, Depends(validate_user)]):
+    res = energy_manager.get_total_consumption(user_id=user.user_id)
+    if res["error"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=res["message"],
+        )
+
+    payload = res["payload"]
+    return payload

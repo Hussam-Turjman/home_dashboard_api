@@ -1,9 +1,10 @@
+from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm.session import Session as SQLSession
 
 from .errors import ManagerErrors, translate_manager_error
 from ..db.tables import EnergyCounter, EnergyCounterReading, User
 import datetime
-from ..db.utils import diff_day, create_dates_labels, to_month_year_str, find_invoice_by_counter_id
+from ..db.utils import diff_day, create_dates_labels, to_month_year_str, diff_month
 from sqlalchemy import func
 from calendar import monthrange
 import numpy as np
@@ -145,8 +146,8 @@ class EnergyManager(object):
             return ManagerErrors.ENERGY_COUNTER_INVALID_READING_DATE
         previous_reading_object = (self.db_session.query(EnergyCounterReading).
                                    filter(
-                                       EnergyCounterReading.counter_id == counter.id)
-                                   .order_by(EnergyCounterReading.reading_date.desc()).first())
+            EnergyCounterReading.counter_id == counter.id)
+            .order_by(EnergyCounterReading.reading_date.desc()).first())
         if not previous_reading_object:
             previous_reading = counter.first_reading
             previous_reading_date = counter.start_date
@@ -292,6 +293,105 @@ class EnergyManager(object):
         )
         return res
 
+    @return_wrapper()
+    def get_total_consumption(self, user_id: int):
+        today = datetime.date.today()
+        start_date = datetime.date(
+            today.year, today.month, 1) - relativedelta(months=1)
+        end_date = start_date + relativedelta(months=1)
+        counters = (self.db_session.query(EnergyCounter).
+                    filter(EnergyCounter.user_id == user_id).
+                    all())
+        if len(counters) == 0:
+            return {
+                "total": 0.0,
+                "current_month_str": to_month_year_str(start_date),
+                "message": "No counters found",
+                "consumption_development_percentage": 0.0,
+                "average_consumption_until_previous_month": 0.0,
+                "current_month": start_date.month,
+                "current_year": start_date.year,
+                "start_month": start_date.month,
+                "start_year": start_date.year,
+                "end_month": end_date.month,
+                "end_year": end_date.year
+            }
+        current_month_total = 0.0
+        for counter in counters:
+            counter_overview = self._get_energy_consumption_overview_for_counter(
+                user_id=user_id,
+                start_date=start_date,
+                end_date=end_date,
+                counter_db_id=counter.id,
+                include_last_month=False
+            )
+            if isinstance(counter_overview, dict):
+                data = counter_overview["data"]
+                if len(data) != 1:
+                    logger.error(
+                        f"Invalid data length. start_date={start_date}, end_date={end_date}, data={data}")
+                    return ManagerErrors.ENERGY_COUNTER_INVALID_READING_DATE
+                current_month_total += sum(data)
+            else:
+                logger.error(
+                    f"Invalid data length. start_date={start_date}, end_date={end_date}, return={counter_overview}")
+                return counter_overview
+
+        min_start_date = (self.db_session.query(func.min(EnergyCounter.start_date)).
+                          filter(EnergyCounter.user_id == user_id)).first()[0]
+
+        max_end_date = start_date - relativedelta(months=1)
+        month_diff = diff_month(max_end_date, min_start_date)
+
+        average_consumption_price = 0.0
+        if month_diff <= 1:
+            average_consumption_price = 0.0
+        else:
+            consumption_overview = self._get_energy_consumption_overview(
+                user_id=user_id,
+                start_date=min_start_date,
+                end_date=max_end_date,
+                include_last_month=False
+            )
+            consumption = consumption_overview["consumption"]
+
+            for sample in consumption:
+                if sample["label"].lower() == "total":
+                    data = sample["data"]
+                    average_consumption_price = sum(data) / len(data)
+                    break
+        if average_consumption_price == 0.0:
+            consumption_development_percentage = 0.0
+        else:
+            average_consumption_price = round(average_consumption_price, 2)
+            consumption_development_percentage = ((
+                current_month_total - average_consumption_price) / average_consumption_price) * 100
+            consumption_development_percentage = round(
+                consumption_development_percentage, 2)
+            # if positive, then consumption is decreasing
+            consumption_development_percentage *= -1
+        if consumption_development_percentage > 0:
+            message = "Energy consumption is decreasing"
+        elif consumption_development_percentage == 0:
+            message = "Energy consumption is stable"
+        else:
+            message = "Energy consumption is increasing"
+        res = {
+            "total": current_month_total,
+            "current_month_str": to_month_year_str(start_date),
+            "current_month": start_date.month,
+            "current_year": start_date.year,
+            "message": message,
+            "average_consumption_until_previous_month": average_consumption_price,
+            "consumption_development_percentage": consumption_development_percentage,
+            "start_month": min_start_date.month,
+            "start_year": min_start_date.year,
+            "end_month": max_end_date.month,
+            "end_year": max_end_date.year
+        }
+        logger.info(res)
+        return res
+
     def _get_energy_consumption_overview_for_counter(self, user_id: int,
                                                      start_date: datetime.date,
                                                      end_date: datetime.date,
@@ -364,7 +464,8 @@ class EnergyManager(object):
                 next_reading.reading_date.year,
                 next_reading.reading_date.month,
                 monthrange(next_reading.reading_date.year,
-                           next_reading.reading_date.month)[1] if next_reading.reading_date.year == current_reading.reading_date.year and next_reading.reading_date.month == current_reading.reading_date.month else 1
+                           next_reading.reading_date.month)[
+                    1] if next_reading.reading_date.year == current_reading.reading_date.year and next_reading.reading_date.month == current_reading.reading_date.month else 1
             )
             diff_days = diff_day(next_reading_date,
                                  current_reading_date)
