@@ -25,6 +25,7 @@ class ManagerErrors(Enum):
     ENERGY_COUNTER_INVALID_READING = 20
     NOT_ENOUGH_ENERGY_COUNTER_READINGS = 21
     FEATURE_NOT_IMPLEMENTED = 22
+    INVALID_MONTH_FREQUENCY = 23
 
 
 def translate_manager_error(error: ManagerErrors) -> str:
@@ -77,6 +78,9 @@ def translate_manager_error(error: ManagerErrors) -> str:
 
     if error == ManagerErrors.FEATURE_NOT_IMPLEMENTED:
         return "Feature not implemented"
+
+    if error == ManagerErrors.INVALID_MONTH_FREQUENCY:
+        return "Invalid month frequency. Valid values are between 1 and 12"
 
     raise ValueError(f"Unknown manager error: {error}")
 

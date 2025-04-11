@@ -349,6 +349,8 @@ class ExpenseManager(object):
                                  start_date: datetime.date,
                                  end_date: datetime.date,
                                  month_freq: int = 3):
+        if month_freq < 1:
+            return ManagerErrors.INVALID_MONTH_FREQUENCY
         tags = [tag[0]
                 for tag in self.db_session.query(AccountEntry.tag).distinct()]
         # min start_date and max end_date

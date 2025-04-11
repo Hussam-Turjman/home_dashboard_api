@@ -121,17 +121,30 @@ async def get_overview_chart(user: Annotated[UserSessionModel, Depends(validate_
 @router.get("/analysis_overview/{session_id}", response_model=dict)
 async def get_analysis_overview(user: Annotated[UserSessionModel, Depends(validate_user)],
                                 start_month: int, start_year: int,
-                                end_month: int, end_year: int, request: Request):
+                                end_month: int, end_year: int, frequency: str, request: Request):
     if start_month == 0 or start_year == 0 or end_month == 0 or end_year == 0:
         start_date = None
         end_date = None
     else:
         start_date = datetime.date(start_year, start_month, 1)
         end_date = datetime.date(end_year, end_month, 1)
+    month_freq = -1
+    if frequency.lower() == "monthly":
+        month_freq = 1
+    elif frequency.lower() == "trimonthly":
+        month_freq = 3
+    elif frequency.lower() == "quarterly":
+        month_freq = 4
+    elif frequency.lower() == "semiannually":
+        month_freq = 6
+    elif frequency.lower() == "annually":
+        month_freq = 12
+
     res = expense_manager.create_analysis_overview(
         user_id=user.user_id,
         start_date=start_date,
         end_date=end_date,
+        month_freq=month_freq,
     )
     if res["error"]:
         raise HTTPException(
