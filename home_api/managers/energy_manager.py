@@ -59,7 +59,7 @@ class EnergyManager(object):
                                     first_reading=first_reading)
             self.db_session.add(counter)
         self.db_session.commit()
-        return counter.convert_to_dict()
+        return counter.to_dict()
 
     @return_wrapper()
     def add_energy_counter(self, user_id, counter_id_db, counter_id, counter_type, energy_unit,
@@ -85,7 +85,7 @@ class EnergyManager(object):
             return ManagerErrors.ENTRY_NOT_FOUND
         self.db_session.delete(counter)
         self.db_session.commit()
-        return counter.convert_to_dict()
+        return counter.to_dict()
 
     @return_wrapper()
     def delete_energy_counter(self, user_id, counter_id_db):
@@ -110,7 +110,7 @@ class EnergyManager(object):
             counter_id = reading[1]
             counter_type = reading[2]
             r = reading[0]
-            tmp.append(r.convert_to_dict(
+            tmp.append(r.to_dict(
                 counter_id=counter_id,
                 counter_type=counter_type
             ))

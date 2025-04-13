@@ -34,6 +34,7 @@ class User(Base):
     user_sessions = relationship("UserSession", cascade="all, delete-orphan")
     energy_counters = relationship(
         "EnergyCounter", cascade="all, delete-orphan")
+
     # user_settings = relationship("UserSettings", cascade="all, delete-orphan")
 
     def __repr__(self):
@@ -213,6 +214,17 @@ class AccountEntry(Base):
                 f"tag={self.tag}, "
                 f"user_id={self.user_id}>")
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "start_date": self.start_date,
+            "end_date": self.end_date,
+            "amount": self.amount,
+            "name": self.name,
+            "tag": self.tag,
+            "user_id": self.user_id
+        }
+
 
 class EnergyCounter(Base):
     __tablename__ = "energy_counter"
@@ -268,7 +280,7 @@ class EnergyCounter(Base):
             user_id=user_id
         )
 
-    def convert_to_dict(self):
+    def to_dict(self):
         return {
             "id": self.id,
             "counter_id": self.counter_id,
@@ -307,6 +319,14 @@ class EnergyCounterReading(Base):
             "reading_date": self.reading_date,
             "counter_id": counter_id,
             "counter_type": counter_type
+        }
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "reading": self.reading,
+            "reading_date": self.reading_date,
+            "counter_id": self.counter_id
         }
 
     def __repr__(self):
