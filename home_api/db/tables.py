@@ -35,6 +35,9 @@ class User(Base):
     energy_counters = relationship(
         "EnergyCounter", cascade="all, delete-orphan")
 
+    bank_transactions = relationship(
+        "BankTransaction", cascade="all, delete-orphan")
+
     # user_settings = relationship("UserSettings", cascade="all, delete-orphan")
 
     def __repr__(self):
@@ -226,6 +229,67 @@ class AccountEntry(Base):
         }
 
 
+class BankTransaction(Base):
+    __tablename__ = "bank_transaction"
+    id = Column(UUID(as_uuid=True), primary_key=True,
+                name="id", unique=True, default=uuid.uuid4)
+
+    time_created = Column(DateTime(timezone=True), server_default=func.now())
+    time_updated = Column(DateTime(timezone=True), onupdate=func.now())
+    # Booking Date;Value Date;Amount;Currency;Description;Category;Subcategory;Keyword
+    booking_date = Column(Date, name="booking_date", nullable=False)
+    value_date = Column(Date, name="value_date", nullable=False)
+    amount = Column(Float, name="amount", nullable=False)
+    currency = Column(String, name="currency", nullable=False)
+    description = Column(String, name="description", nullable=False)
+    category = Column(String, name="category", nullable=False)
+    subcategory = Column(String, name="subcategory", nullable=False)
+    keyword = Column(String, name="keyword", nullable=False)
+
+    user_id = Column(Integer, ForeignKey("user.id"),
+                     name="user_id", nullable=False)
+
+    @classmethod
+    def create_empty_bank_transaction(cls, user_id):
+        return cls(
+            booking_date=datetime.datetime.now().date(),
+            value_date=datetime.datetime.now().date(),
+            amount=0.0,
+            currency="EUR",
+            description="description",
+            category="category",
+            subcategory="subcategory",
+            keyword="keyword",
+            user_id=user_id
+        )
+
+    def __repr__(self):
+        return (f"<BankTransaction(id={self.id}, "
+                f"booking_date={self.booking_date}, "
+                f"value_date={self.value_date}, "
+                f"amount={self.amount}, "
+                f"currency={self.currency}, "
+                f"description={self.description}, "
+                f"category={self.category}, "
+                f"subcategory={self.subcategory}, "
+                f"keyword={self.keyword}, "
+                f"user_id={self.user_id}>")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "booking_date": self.booking_date,
+            "value_date": self.value_date,
+            "amount": self.amount,
+            "currency": self.currency,
+            "description": self.description,
+            "category": self.category,
+            "subcategory": self.subcategory,
+            "keyword": self.keyword,
+            "user_id": self.user_id
+        }
+
+
 class EnergyCounter(Base):
     __tablename__ = "energy_counter"
     id = Column(UUID(as_uuid=True), primary_key=True,
@@ -345,4 +409,5 @@ class EnergyCounterReading(Base):
 
 
 __all__ = ["User", "UserSession", "AccountEntry",
-           "EnergyCounter", "EnergyCounterReading", "Base"]
+           "EnergyCounter", "EnergyCounterReading",
+           "Base", "BankTransaction"]

@@ -110,7 +110,7 @@ class EnergyManager(object):
             counter_id = reading[1]
             counter_type = reading[2]
             r = reading[0]
-            tmp.append(r.to_dict(
+            tmp.append(r.convert_to_dict(
                 counter_id=counter_id,
                 counter_type=counter_type
             ))

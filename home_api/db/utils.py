@@ -53,6 +53,15 @@ def create_dates_labels_daily(start_date, end_date, include_last_day, to_dates):
     return x_labels
 
 
+def dates_to_labels(dates):
+    x_labels = []
+    for date in dates:
+        year = date.year
+        month = date.month
+        x_labels.append(f"{id_2_month[month]} {year}")
+    return x_labels
+
+
 def create_dates_labels(start_date, end_date,
                         include_last_month, to_dates):
     start_month = start_date.month
@@ -121,5 +130,6 @@ __all__ = ["generate_password",
            "create_dates_labels_yearly",
            "create_dates_labels_daily",
            "to_month_year_str",
-           "get_freq"
+           "get_freq",
+           "dates_to_labels",
            ]

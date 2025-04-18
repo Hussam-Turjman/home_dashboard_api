@@ -13,6 +13,7 @@ from .routers.user import router as user_router
 from .routers.expense import router as expense_router
 from .routers.events import router as events_router
 from .routers.energy import router as energy_router
+from .routers.transactions import router as transactions_router
 
 
 @asynccontextmanager
@@ -64,9 +65,11 @@ app.include_router(router=user_router)
 app.include_router(router=expense_router)
 app.include_router(router=events_router)
 app.include_router(router=energy_router)
-
+app.include_router(router=transactions_router)
 
 # Order matters
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     exc_str = f'{exc}'.replace('\n', ' ').replace('   ', ' ')
