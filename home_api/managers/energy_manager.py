@@ -157,7 +157,7 @@ class EnergyManager(object):
         logger.info(
             f"previous_reading: {previous_reading}, previous_reading_date: {previous_reading_date}")
 
-        if str(previous_reading_object.id) != str(entry_id):
+        if previous_reading_object is not None and str(previous_reading_object.id) != str(entry_id):
             # print(f"entry_id: {entry_id}, previous_reading_object.id: {previous_reading_object.id}")
             if reading_date <= previous_reading_date:
                 return ManagerErrors.ENERGY_COUNTER_INVALID_READING_DATE
